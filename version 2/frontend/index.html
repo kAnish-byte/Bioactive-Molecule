@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="BioPredict — AI-powered virtual screening that predicts COX-2 bioactivity of molecules with XGBoost, explainable atom attribution and interactive 3D structures." />
+  <meta name="theme-color" content="#f4f8f7" />
+  <title>BioPredict — Bioactive Molecule Prediction</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/app/style.css" />
+
+  <!-- Lucide icons -->
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+  <script>
+    if (!window.lucide) {
+      document.write('<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"><\/script>');
+    }
+  </script>
+</head>
+<body>
+  <a class="skip-link" href="#hero">Skip to main content</a>
+
+  <!-- Ambient background: soft gradient mesh -->
+  <div class="ambient" aria-hidden="true">
+    <div class="grid-fade"></div>
+  </div>
+
+  <!-- ═══════════════ Navigation ═══════════════ -->
+  <header class="navbar" id="navbar">
+    <div class="container nav-inner">
+      <a href="/app/" class="brand" aria-label="BioPredict home">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 32 32" width="22" height="22" fill="none">
+            <line x1="16" y1="16" x2="7" y2="8" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity=".55"/>
+            <line x1="16" y1="16" x2="25" y2="8" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity=".55"/>
+            <line x1="16" y1="16" x2="16" y2="27" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity=".55"/>
+            <circle cx="16" cy="16" r="5" fill="currentColor"/>
+            <circle cx="7" cy="8" r="3" fill="currentColor" opacity=".8"/>
+            <circle cx="25" cy="8" r="3" fill="currentColor" opacity=".8"/>
+            <circle cx="16" cy="27" r="3" fill="currentColor" opacity=".8"/>
+          </svg>
+        </span>
+        <span class="brand-text">
+          <span class="brand-title">BioPredict</span>
+          <span class="brand-tag">Drug Discovery AI</span>
+        </span>
+      </a>
+
+      <nav class="nav-links" id="navLinks" aria-label="Primary">
+        <a href="/app/" data-page="home" class="active" aria-current="page">Home</a>
+        <a href="/app/predict" data-page="predict">Prediction</a>
+        <a href="/app/batch" data-page="batch">Batch Screening</a>
+        <a href="/app/benchmark" data-page="benchmark">Benchmark</a>
+        <a href="/app/about" data-page="about">About</a>
+      </nav>
+
+      <div class="nav-right">
+        <div class="status-pill" id="serverStatus" title="FastAPI backend status" role="status" aria-live="polite">
+          <span class="status-dot" id="statusDot"></span>
+          <span class="status-text" id="statusText">Checking…</span>
+        </div>
+        <button class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false" aria-controls="navLinks">
+          <i data-lucide="menu"></i>
+        </button>
+      </div>
+    </div>
+    <div class="scroll-progress" id="scrollProgress" aria-hidden="true"></div>
+  </header>
+
+  <main>
+    <!-- ═══════════════ Hero ═══════════════ -->
+    <section class="hero" id="hero">
+      <div class="container hero-grid">
+        <div class="hero-copy reveal">
+          <span class="eyebrow">
+            <span class="eyebrow-dot"></span>
+            COX-2 Virtual Screening &middot; CHEMBL230
+          </span>
+          <h1 class="hero-title">
+            Predict molecular bioactivity <span class="text-gradient">before the bench.</span>
+          </h1>
+          <p class="hero-desc">
+            BioPredict screens compounds against Cyclooxygenase-2 with an XGBoost model trained on
+            Morgan fingerprints — then explains <em>why</em>, atom by atom, in interactive 3D.
+          </p>
+          <div class="hero-actions">
+            <a href="/app/predict" class="btn btn-primary btn-lg">
+              <i data-lucide="atom"></i> Predict a Molecule
+            </a>
+            <a href="/app/batch" class="btn btn-ghost btn-lg">
+              <i data-lucide="file-spreadsheet"></i> Batch Screening
+            </a>
+          </div>
+
+          <dl class="hero-stats">
+            <div class="hero-stat">
+              <dt>Curated compounds</dt>
+              <dd><span class="count-up" data-target="6240">0</span></dd>
+            </div>
+            <div class="hero-stat">
+              <dt>CV accuracy</dt>
+              <dd><span class="count-up" data-target="82.21" data-decimals="2">0</span>%</dd>
+            </div>
+            <div class="hero-stat">
+              <dt>Fingerprint bits</dt>
+              <dd><span class="count-up" data-target="2048">0</span></dd>
+            </div>
+            <div class="hero-stat">
+              <dt>Models benchmarked</dt>
+              <dd><span class="count-up" data-target="6">0</span></dd>
+            </div>
+          </dl>
+        </div>
+
+        <div class="hero-visual reveal" style="--delay: 120ms">
+          <div class="orbit orbit-1" aria-hidden="true"><span></span></div>
+          <div class="orbit orbit-2" aria-hidden="true"><span></span></div>
+          <div class="hero-card">
+            <div class="hero-card-head">
+              <div>
+                <span class="mini-label">Molecular Screening</span>
+                <strong>Conformational Dynamics</strong>
+              </div>
+              <span class="tag tag-active"><i data-lucide="sparkles"></i> Topological Featurization</span>
+            </div>
+            <div class="hero-viewer" id="heroViewer" role="img" aria-label="Dynamic molecular conformation and bond network">
+              <canvas id="heroMolCanvas"></canvas>
+            </div>
+            <div class="hero-card-foot">
+              <code>Morgan Radius = 2 &middot; 2048-bit</code>
+              <span>In Silico Modeling</span>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pipeline -->
+      <div class="container">
+        <ol class="pipeline reveal" aria-label="How BioPredict works">
+          <li class="pipe-step">
+            <span class="pipe-icon"><i data-lucide="text-cursor-input"></i></span>
+            <div><strong>Input</strong><span>Drug name or SMILES</span></div>
+          </li>
+          <li class="pipe-step">
+            <span class="pipe-icon"><i data-lucide="fingerprint"></i></span>
+            <div><strong>Fingerprint</strong><span>Morgan r=2 &middot; 2048 bits</span></div>
+          </li>
+          <li class="pipe-step">
+            <span class="pipe-icon"><i data-lucide="brain-circuit"></i></span>
+            <div><strong>Classify</strong><span>XGBoost inference</span></div>
+          </li>
+          <li class="pipe-step">
+            <span class="pipe-icon"><i data-lucide="scan-search"></i></span>
+            <div><strong>Explain</strong><span>Atom attribution &amp; SAR</span></div>
+          </li>
+        </ol>
+      </div>
+
+      <!-- Platform Modules Overview -->
+      <div class="container home-modules">
+        <header class="section-head reveal">
+          <span class="section-tag"><i data-lucide="layout-grid"></i> Core Capabilities</span>
+          <h2>Integrated virtual screening suite</h2>
+          <p>Explore dedicated modules for real-time inference, high-throughput screening, and empirical model validation.</p>
+        </header>
+
+        <div class="module-grid">
+          <!-- Module 1: Prediction -->
+          <div class="module-card reveal">
+            <div>
+              <div class="module-card-head">
+                <span class="module-icon"><i data-lucide="atom"></i></span>
+                <div>
+                  <span class="module-tag">Real-Time Inference</span>
+                  <h3 class="module-title">Single Molecule Prediction</h3>
+                </div>
+              </div>
+              <p class="module-desc">
+                Screen individual drug candidates with instant bioactivity classification, confidence scoring, 3D force-field conformers, and Explainable AI atom attribution.
+              </p>
+              <ul class="module-features-list">
+                <li><i data-lucide="check-circle-2"></i> Interactive 3D WebGL viewer (Ball &amp; Stick / Stick)</li>
+                <li><i data-lucide="check-circle-2"></i> Atom attribution identifying selectivity anchors</li>
+                <li><i data-lucide="check-circle-2"></i> Targeted lead optimization recommendations for inactive leads</li>
+              </ul>
+            </div>
+            <a href="/app/predict" class="btn btn-primary btn-block">
+              <i data-lucide="zap"></i> Predict a Molecule
+            </a>
+          </div>
+
+          <!-- Module 2: Batch Screening -->
+          <div class="module-card reveal" style="--delay: 80ms">
+            <div>
+              <div class="module-card-head">
+                <span class="module-icon sky"><i data-lucide="file-spreadsheet"></i></span>
+                <div>
+                  <span class="module-tag">High-Throughput</span>
+                  <h3 class="module-title">Batch Virtual Screening</h3>
+                </div>
+              </div>
+              <p class="module-desc">
+                Screen extensive compound libraries in seconds by uploading a standard CSV file. Automatic SMILES column detection, progress tracking, and instant hit rate metrics.
+              </p>
+              <ul class="module-features-list">
+                <li><i data-lucide="check-circle-2"></i> Processes libraries up to 2,000 compounds per run</li>
+                <li><i data-lucide="check-circle-2"></i> Dynamic hit rate, active, inactive, and invalid statistics</li>
+                <li><i data-lucide="check-circle-2"></i> Instant CSV export of prediction results with confidence scores</li>
+              </ul>
+            </div>
+            <a href="/app/batch" class="btn btn-primary btn-block">
+              <i data-lucide="layers"></i> Batch Screening
+            </a>
+          </div>
+
+          <!-- Module 3: Benchmark -->
+          <div class="module-card reveal" style="--delay: 140ms">
+            <div>
+              <div class="module-card-head">
+                <span class="module-icon amber"><i data-lucide="bar-chart-3"></i></span>
+                <div>
+                  <span class="module-tag">Rigorous Validation</span>
+                  <h3 class="module-title">Benchmark &amp; Leaderboard</h3>
+                </div>
+              </div>
+              <p class="module-desc">
+                Compare performance across 6 distinct machine learning architectures evaluated on identical 2048-bit Morgan fingerprints using 10-fold cross-validation and holdout tests.
+              </p>
+              <ul class="module-features-list">
+                <li><i data-lucide="check-circle-2"></i> Ranked leaderboard across XGBoost, RF, SVM, ANN, and more</li>
+                <li><i data-lucide="check-circle-2"></i> Comprehensive metrics: ROC-AUC, Accuracy, Precision, F1</li>
+                <li><i data-lucide="check-circle-2"></i> High-resolution research figures and confusion matrix</li>
+              </ul>
+            </div>
+            <a href="/app/benchmark" class="btn btn-soft btn-block">
+              <i data-lucide="trophy"></i> View Leaderboard
+            </a>
+          </div>
+
+          <!-- Module 4: About -->
+          <div class="module-card reveal" style="--delay: 200ms">
+            <div>
+              <div class="module-card-head">
+                <span class="module-icon teal"><i data-lucide="info"></i></span>
+                <div>
+                  <span class="module-tag">Scientific Rigor</span>
+                  <h3 class="module-title">The Science Behind BioPredict</h3>
+                </div>
+              </div>
+              <p class="module-desc">
+                Deep dive into the biological target (Cyclooxygenase-2), the ChEMBL230 bioassay dataset curation, topological feature extraction, and algorithm selection rationale.
+              </p>
+              <ul class="module-features-list">
+                <li><i data-lucide="check-circle-2"></i> COX-2 selectivity mechanism vs gastric COX-1</li>
+                <li><i data-lucide="check-circle-2"></i> Morgan circular fingerprint generation (radius=2, 2048-bit)</li>
+                <li><i data-lucide="check-circle-2"></i> Comprehensive cheminformatics &amp; ML methodology</li>
+              </ul>
+            </div>
+            <a href="/app/about" class="btn btn-soft btn-block">
+              <i data-lucide="book-open"></i> Read the Science
+            </a>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-inner">
+      <div class="brand small">
+        <span class="brand-mark" aria-hidden="true"><i data-lucide="atom"></i></span>
+        <span class="brand-title">BioPredict</span>
+      </div>
+      <p>COX-2 bioactivity prediction for research and education. Not for clinical use.</p>
+      <nav class="footer-links" aria-label="Resources">
+        <a href="/app/">Home</a>
+        <a href="/app/predict">Prediction</a>
+        <a href="/app/batch">Batch Screening</a>
+        <a href="/app/benchmark">Benchmark</a>
+        <a href="/app/about">About</a>
+      </nav>
+    </div>
+  </footer>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="/app/script.js"></script>
+</body>
+</html>

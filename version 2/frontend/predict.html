@@ -1,0 +1,314 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="BioPredict Prediction Workspace — Screen individual molecules for COX-2 bioactivity with 3D conformation and explainable atom attribution." />
+  <meta name="theme-color" content="#f4f8f7" />
+  <title>Prediction Workspace — BioPredict</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/app/style.css" />
+
+  <!-- 3Dmol.js: WebGL molecular visualization -->
+  <script src="https://cdn.jsdelivr.net/npm/3dmol@2.4.2/build/3Dmol-min.js"></script>
+  <script>
+    if (!window.$3Dmol) {
+      document.write('<script src="https://cdnjs.cloudflare.com/ajax/libs/3Dmol/2.4.2/3Dmol-min.js"><\/script>');
+    }
+  </script>
+  <!-- Lucide icons -->
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+  <script>
+    if (!window.lucide) {
+      document.write('<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"><\/script>');
+    }
+  </script>
+</head>
+<body>
+  <a class="skip-link" href="#predict">Skip to prediction workspace</a>
+
+  <!-- Ambient background: soft gradient mesh -->
+  <div class="ambient" aria-hidden="true">
+    <div class="grid-fade"></div>
+  </div>
+
+  <!-- ═══════════════ Navigation ═══════════════ -->
+  <header class="navbar" id="navbar">
+    <div class="container nav-inner">
+      <a href="/app/" class="brand" aria-label="BioPredict home">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 32 32" width="22" height="22" fill="none">
+            <line x1="16" y1="16" x2="7" y2="8" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity=".55"/>
+            <line x1="16" y1="16" x2="25" y2="8" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity=".55"/>
+            <line x1="16" y1="16" x2="16" y2="27" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity=".55"/>
+            <circle cx="16" cy="16" r="5" fill="currentColor"/>
+            <circle cx="7" cy="8" r="3" fill="currentColor" opacity=".8"/>
+            <circle cx="25" cy="8" r="3" fill="currentColor" opacity=".8"/>
+            <circle cx="16" cy="27" r="3" fill="currentColor" opacity=".8"/>
+          </svg>
+        </span>
+        <span class="brand-text">
+          <span class="brand-title">BioPredict</span>
+          <span class="brand-tag">Drug Discovery AI</span>
+        </span>
+      </a>
+
+      <nav class="nav-links" id="navLinks" aria-label="Primary">
+        <a href="/app/" data-page="home">Home</a>
+        <a href="/app/predict" data-page="predict" class="active" aria-current="page">Prediction</a>
+        <a href="/app/batch" data-page="batch">Batch Screening</a>
+        <a href="/app/benchmark" data-page="benchmark">Benchmark</a>
+        <a href="/app/about" data-page="about">About</a>
+      </nav>
+
+      <div class="nav-right">
+        <div class="status-pill" id="serverStatus" title="FastAPI backend status" role="status" aria-live="polite">
+          <span class="status-dot" id="statusDot"></span>
+          <span class="status-text" id="statusText">Checking…</span>
+        </div>
+        <button class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false" aria-controls="navLinks">
+          <i data-lucide="menu"></i>
+        </button>
+      </div>
+    </div>
+    <div class="scroll-progress" id="scrollProgress" aria-hidden="true"></div>
+  </header>
+
+  <main>
+    <!-- ═══════════════ Single Prediction ═══════════════ -->
+    <section class="section" id="predict">
+      <div class="container">
+        <header class="section-head reveal">
+          <span class="section-tag"><i data-lucide="flask-conical"></i> Inference Workspace</span>
+          <h2>Single molecule prediction</h2>
+          <p>Type a drug name or SMILES string to classify bioactivity, explore the structure in 3D and see which fragments drove the decision.</p>
+        </header>
+
+        <div class="predict-grid">
+          <!-- Input column -->
+          <div class="predict-side">
+            <div class="card input-card reveal">
+              <div class="card-head">
+                <span class="card-icon"><i data-lucide="pen-line"></i></span>
+                <div>
+                  <h3 class="card-title">Chemical input</h3>
+                  <p class="card-sub">Common names or SMILES notation</p>
+                </div>
+              </div>
+
+              <label for="smilesInput" class="form-label">Molecule name or SMILES</label>
+              <div class="textarea-wrap">
+                <textarea id="smilesInput" rows="4" spellcheck="false" autocomplete="off"
+                  placeholder="e.g. Celecoxib or Cc1ccc(-c2cc(C(F)(F)F)nn2-c2ccc(S(N)(=O)=O)cc2)cc1"></textarea>
+                <span class="kbd-hint" aria-hidden="true"><kbd>Ctrl</kbd> + <kbd>Enter</kbd></span>
+              </div>
+              <p class="error-msg" id="inputError" role="alert"></p>
+
+              <div class="btn-row">
+                <button class="btn btn-primary btn-block" id="btnPredict">
+                  <i data-lucide="zap"></i> <span>Predict bioactivity</span>
+                </button>
+              </div>
+              <div class="btn-row two">
+                <button class="btn btn-soft" id="btnExample"><i data-lucide="shuffle"></i> Random example</button>
+                <button class="btn btn-soft" id="btnClear"><i data-lucide="eraser"></i> Clear</button>
+              </div>
+
+              <div class="quick">
+                <span class="mini-label">Quick picks</span>
+                <div class="quick-chips" id="quickChips">
+                  <button class="qchip" data-value="Celecoxib">Celecoxib</button>
+                  <button class="qchip" data-value="Rofecoxib">Rofecoxib</button>
+                  <button class="qchip" data-value="Aspirin">Aspirin</button>
+                  <button class="qchip" data-value="Ibuprofen">Ibuprofen</button>
+                  <button class="qchip" data-value="Diclofenac">Diclofenac</button>
+                  <button class="qchip" data-value="Caffeine">Caffeine</button>
+                </div>
+              </div>
+            </div>
+
+            <!-- Verdict / summary -->
+            <div class="card verdict-card reveal" id="verdictCard" style="--delay: 80ms">
+              <div class="verdict-empty" id="resultEmpty">
+                <span class="empty-icon"><i data-lucide="microscope"></i></span>
+                <strong>Awaiting a molecule</strong>
+                <p>Your prediction, confidence and molecular properties will appear here.</p>
+              </div>
+
+              <div class="verdict-body" id="resultBody" hidden>
+                <div class="verdict-top">
+                  <div class="gauge" id="gauge" style="--value: 0">
+                    <svg viewBox="0 0 120 120" aria-hidden="true">
+                      <circle class="gauge-track" cx="60" cy="60" r="50" />
+                      <circle class="gauge-fill" id="gaugeFill" cx="60" cy="60" r="50" />
+                    </svg>
+                    <div class="gauge-label">
+                      <strong id="gaugeValue">0%</strong>
+                      <span>confidence</span>
+                    </div>
+                  </div>
+                  <div class="verdict-meta">
+                    <span class="mini-label">Prediction</span>
+                    <span class="badge" id="predBadge">—</span>
+                    <h3 class="mol-name" id="resMolName">—</h3>
+                    <span class="model-chip"><i data-lucide="cpu"></i> <span id="resModel">XGBoost</span></span>
+                  </div>
+                </div>
+
+                <dl class="props">
+                  <div><dt>Formula</dt><dd id="resFormula">—</dd></div>
+                  <div><dt>Mol. weight</dt><dd id="resMW">—</dd></div>
+                  <div><dt>Heavy atoms</dt><dd id="resAtoms">—</dd></div>
+                  <div><dt>Bonds</dt><dd id="resBonds">—</dd></div>
+                </dl>
+
+                <div class="smiles-box">
+                  <span class="mini-label">Canonical SMILES</span>
+                  <div class="smiles-row">
+                    <code id="resSmiles">—</code>
+                    <button class="icon-btn" id="btnCopySmiles" aria-label="Copy SMILES"><i data-lucide="copy"></i></button>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+
+          <!-- 3D viewer & Explainable AI column (Right Side) -->
+          <div class="predict-side predict-right">
+            <div class="card viewer-card reveal" style="--delay: 140ms">
+              <div class="viewer-head">
+                <div class="card-head compact">
+                  <span class="card-icon"><i data-lucide="box"></i></span>
+                  <div>
+                    <h3 class="card-title">3D molecular structure</h3>
+                    <p class="card-sub">Drag to rotate &middot; scroll to zoom</p>
+                  </div>
+                </div>
+                <div class="seg" role="group" aria-label="Rendering style" id="styleSeg">
+                  <button class="seg-btn active" data-style="ballstick">Ball &amp; stick</button>
+                  <button class="seg-btn" data-style="stick">Stick</button>
+                </div>
+              </div>
+
+              <div class="viewer-stage">
+                <div id="mol3dContainer" class="mol3d" aria-label="Interactive 3D molecule viewer"></div>
+
+                <div class="stage-overlay" id="stageEmpty">
+                  <div class="stage-orb" aria-hidden="true">
+                    <span></span><span></span><span></span>
+                  </div>
+                  <strong>No structure loaded</strong>
+                  <p>Run a prediction to render a force-field optimised 3D conformer.</p>
+                </div>
+
+                <div class="stage-overlay loading" id="resultLoading" hidden>
+                  <div class="loader" aria-hidden="true"><span></span><span></span><span></span></div>
+                  <strong>Analysing molecule</strong>
+                  <p id="loadingStep">Generating fingerprint…</p>
+                </div>
+
+                <div class="viewer-tools" id="viewerTools" hidden>
+                  <button class="tool-btn" id="btnToggleSpin" aria-pressed="false"><i data-lucide="play"></i><span>Rotate</span></button>
+                  <button class="tool-btn" id="btnResetView"><i data-lucide="maximize"></i><span>Recenter</span></button>
+                  <button class="tool-btn" id="btnSnapshot"><i data-lucide="camera"></i><span>Snapshot</span></button>
+                </div>
+
+                <ul class="legend" id="atomLegend" hidden aria-label="Atom color legend">
+                  <li><span style="--c:#909090"></span>C</li>
+                  <li><span style="--c:#3050f8"></span>N</li>
+                  <li><span style="--c:#ff0d0d"></span>O</li>
+                  <li><span style="--c:#ffff30"></span>S</li>
+                  <li><span style="--c:#90e050"></span>F</li>
+                  <li><span style="--c:#f59e0b"></span>Key atom</li>
+                </ul>
+              </div>
+            </div>
+
+            <!-- Target Profile Card (Shown initially when awaiting a molecule) -->
+            <div class="card target-specs-card reveal" id="targetSpecsCard" style="--delay: 160ms">
+              <div class="card-head compact">
+                <span class="card-icon"><i data-lucide="shield-check"></i></span>
+                <div>
+                  <h3 class="card-title">Target &amp; Assay Specifications</h3>
+                  <p class="card-sub">ChEMBL230 &middot; Cyclooxygenase-2 Benchmark</p>
+                </div>
+              </div>
+              <div class="spec-grid">
+                <div class="spec-item">
+                  <span class="spec-label">Target Organism</span>
+                  <strong>Homo sapiens (Human)</strong>
+                </div>
+                <div class="spec-item">
+                  <span class="spec-label">Activity Cutoff</span>
+                  <strong>IC50 &le; 1,000 nM (Active)</strong>
+                </div>
+                <div class="spec-item">
+                  <span class="spec-label">Featurization</span>
+                  <strong>Morgan r=2 &middot; 2048-bit</strong>
+                </div>
+                <div class="spec-item">
+                  <span class="spec-label">Primary Classifier</span>
+                  <strong>XGBoost (82.21% CV Acc)</strong>
+                </div>
+              </div>
+            </div>
+
+            <!-- Explainable AI Card (Swapped in when prediction is made) -->
+            <div class="card xai-card" id="xaiContainer" hidden>
+              <div class="card-head between">
+                <div class="card-head compact">
+                  <span class="card-icon amber"><i data-lucide="scan-search"></i></span>
+                  <div>
+                    <h3 class="card-title">Explainable AI &middot; atom attribution</h3>
+                    <p class="card-sub">Fragments that influenced the decision. Click one to highlight in 3D.</p>
+                  </div>
+                </div>
+                <button class="btn btn-soft btn-sm" id="btnToggleAttribution">
+                  <i data-lucide="sparkles"></i> <span id="btnAttributionText">Highlight key atoms</span>
+                </button>
+              </div>
+              <div class="xai-list" id="xaiSubstructuresList"></div>
+            </div>
+
+            <!-- Lead Optimization Card (Swapped in when Inactive is predicted) -->
+            <div class="card opt-card-wrap" id="optContainer" hidden>
+              <div class="card-head compact">
+                <span class="card-icon rose"><i data-lucide="wand-sparkles"></i></span>
+                <div>
+                  <h3 class="card-title">Lead optimisation suggestions</h3>
+                  <p class="card-sub">Structure–activity ideas to push this compound toward COX-2 activity.</p>
+                </div>
+              </div>
+              <div class="opt-list" id="optSuggestionsList"></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-inner">
+      <div class="brand small">
+        <span class="brand-mark" aria-hidden="true"><i data-lucide="atom"></i></span>
+        <span class="brand-title">BioPredict</span>
+      </div>
+      <p>COX-2 bioactivity prediction for research and education. Not for clinical use.</p>
+      <nav class="footer-links" aria-label="Resources">
+        <a href="/app/">Home</a>
+        <a href="/app/predict">Prediction</a>
+        <a href="/app/batch">Batch Screening</a>
+        <a href="/app/benchmark">Benchmark</a>
+        <a href="/app/about">About</a>
+      </nav>
+    </div>
+  </footer>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="/app/script.js"></script>
+</body>
+</html>

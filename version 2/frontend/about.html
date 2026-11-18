@@ -1,0 +1,163 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="About BioPredict — Discover the scientific methodology, COX-2 target biology, Morgan fingerprints, and machine learning architecture." />
+  <meta name="theme-color" content="#f4f8f7" />
+  <title>About BioPredict — Science & Architecture</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/app/style.css" />
+
+  <!-- Lucide icons -->
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+  <script>
+    if (!window.lucide) {
+      document.write('<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"><\/script>');
+    }
+  </script>
+</head>
+<body>
+  <a class="skip-link" href="#about">Skip to about</a>
+
+  <!-- Ambient background: soft gradient mesh -->
+  <div class="ambient" aria-hidden="true">
+    <div class="grid-fade"></div>
+  </div>
+
+  <!-- ═══════════════ Navigation ═══════════════ -->
+  <header class="navbar" id="navbar">
+    <div class="container nav-inner">
+      <a href="/app/" class="brand" aria-label="BioPredict home">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 32 32" width="22" height="22" fill="none">
+            <line x1="16" y1="16" x2="7" y2="8" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity=".55"/>
+            <line x1="16" y1="16" x2="25" y2="8" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity=".55"/>
+            <line x1="16" y1="16" x2="16" y2="27" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity=".55"/>
+            <circle cx="16" cy="16" r="5" fill="currentColor"/>
+            <circle cx="7" cy="8" r="3" fill="currentColor" opacity=".8"/>
+            <circle cx="25" cy="8" r="3" fill="currentColor" opacity=".8"/>
+            <circle cx="16" cy="27" r="3" fill="currentColor" opacity=".8"/>
+          </svg>
+        </span>
+        <span class="brand-text">
+          <span class="brand-title">BioPredict</span>
+          <span class="brand-tag">Drug Discovery AI</span>
+        </span>
+      </a>
+
+      <nav class="nav-links" id="navLinks" aria-label="Primary">
+        <a href="/app/" data-page="home">Home</a>
+        <a href="/app/predict" data-page="predict">Prediction</a>
+        <a href="/app/batch" data-page="batch">Batch Screening</a>
+        <a href="/app/benchmark" data-page="benchmark">Benchmark</a>
+        <a href="/app/about" data-page="about" class="active" aria-current="page">About</a>
+      </nav>
+
+      <div class="nav-right">
+        <div class="status-pill" id="serverStatus" title="FastAPI backend status" role="status" aria-live="polite">
+          <span class="status-dot" id="statusDot"></span>
+          <span class="status-text" id="statusText">Checking…</span>
+        </div>
+        <button class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false" aria-controls="navLinks">
+          <i data-lucide="menu"></i>
+        </button>
+      </div>
+    </div>
+    <div class="scroll-progress" id="scrollProgress" aria-hidden="true"></div>
+  </header>
+
+  <main>
+    <!-- ═══════════════ About ═══════════════ -->
+    <section class="section" id="about">
+      <div class="container">
+        <header class="section-head reveal">
+          <span class="section-tag"><i data-lucide="info"></i> About the project</span>
+          <h2>Science behind BioPredict</h2>
+          <p>An end-to-end cheminformatics pipeline — from curated ChEMBL bioassays to an explainable, deployable web service.</p>
+        </header>
+
+        <!-- Project Overview Hero Card -->
+        <div class="about-card-hero reveal">
+          <div class="card-head compact" style="margin-bottom: 12px;">
+            <span class="card-icon"><i data-lucide="target"></i></span>
+            <div>
+              <h3 style="margin: 0; font-size: 1.25rem;">Project Overview &amp; Biological Rationale</h3>
+              <p class="card-sub">Targeting Cyclooxygenase-2 (COX-2) for Next-Generation Anti-Inflammatory Leads</p>
+            </div>
+          </div>
+          <p>
+            Cyclooxygenase-2 (COX-2, gene <em>PTGS2</em>) is an inducible enzyme that converts arachidonic acid into pro-inflammatory prostaglandins. Classical non-steroidal anti-inflammatory drugs (NSAIDs) non-selectively inhibit both COX-1 and COX-2. Because constitutive COX-1 maintains gastric mucosal protection and platelet homeostasis, non-selective inhibition frequently triggers severe gastrointestinal ulceration and bleeding.
+          </p>
+          <p>
+            <strong>BioPredict</strong> was developed to accelerate the computational discovery of selective COX-2 inhibitors. By exploiting the distinct secondary hydrophilic binding pocket of COX-2 (formed by Val523 replacing Ile523 in COX-1), our predictive models prioritize compounds with high selectivity anchors, reducing bench attrition and animal testing.
+          </p>
+        </div>
+
+        <!-- 4 Core Scientific Pillars -->
+        <div class="about-grid">
+          <article class="card feature reveal">
+            <span class="feature-icon"><i data-lucide="database"></i></span>
+            <h3>COX-2 &amp; ChEMBL Dataset</h3>
+            <p>6,240 bioactivity records curated from ChEMBL (CHEMBL230), filtered for Homo sapiens assays, deduplicated, and binarized using a strict pharmacological cutoff (IC50 &le; 1,000 nM = Active).</p>
+          </article>
+          <article class="card feature reveal" style="--delay: 80ms">
+            <span class="feature-icon"><i data-lucide="fingerprint"></i></span>
+            <h3>Morgan Fingerprints</h3>
+            <p>Molecules are translated into 2048-bit circular Extended Connectivity Fingerprints (ECFP4 equivalent, radius=2) with RDKit, capturing intricate atom neighborhood environments.</p>
+          </article>
+          <article class="card feature reveal" style="--delay: 160ms">
+            <span class="feature-icon"><i data-lucide="brain-circuit"></i></span>
+            <h3>XGBoost Classifier</h3>
+            <p>Extreme Gradient Boosting trees selected after empirical benchmarking across 6 ML architectures, yielding 82.21% cross-validation accuracy and superior generalization on holdout tests.</p>
+          </article>
+          <article class="card feature reveal" style="--delay: 240ms">
+            <span class="feature-icon"><i data-lucide="scan-search"></i></span>
+            <h3>Explainable AI (XAI)</h3>
+            <p>Gini split importance scores are matched back to bit-origin atom environments, highlighting key pharmacophores (such as sulfonamide and CF3 groups) directly in interactive 3D.</p>
+          </article>
+        </div>
+
+        <!-- Tech Stack -->
+        <div class="stack reveal" style="margin-top: 48px;">
+          <span class="mini-label">Built with open-source science</span>
+          <ul class="stack-list">
+            <li>Python 3.11</li>
+            <li>RDKit</li>
+            <li>XGBoost</li>
+            <li>scikit-learn</li>
+            <li>FastAPI</li>
+            <li>3Dmol.js (WebGL)</li>
+            <li>PubChem REST</li>
+            <li>Lucide Icons</li>
+          </ul>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-inner">
+      <div class="brand small">
+        <span class="brand-mark" aria-hidden="true"><i data-lucide="atom"></i></span>
+        <span class="brand-title">BioPredict</span>
+      </div>
+      <p>COX-2 bioactivity prediction for research and education. Not for clinical use.</p>
+      <nav class="footer-links" aria-label="Resources">
+        <a href="/app/">Home</a>
+        <a href="/app/predict">Prediction</a>
+        <a href="/app/batch">Batch Screening</a>
+        <a href="/app/benchmark">Benchmark</a>
+        <a href="/app/about">About</a>
+      </nav>
+    </div>
+  </footer>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="/app/script.js"></script>
+</body>
+</html>
