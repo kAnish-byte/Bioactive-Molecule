@@ -288,17 +288,12 @@
 
             <!-- Potential Therapeutic Applications Card (Swapped in when Active is predicted) -->
             <div class="card opt-card-wrap" id="activeAppContainer" hidden>
-              <div class="card-head between">
-                <div class="card-head compact">
-                  <span class="card-icon green"><i data-lucide="flask-conical"></i></span>
-                  <div>
-                    <h3 class="card-title">Potential Therapeutic Applications</h3>
-                    <p class="card-sub">RDKit-evaluated suitability across 6 clinical domains (Top 3 most promising displayed).</p>
-                  </div>
+              <div class="card-head compact">
+                <span class="card-icon green"><i data-lucide="flask-conical"></i></span>
+                <div>
+                  <h3 class="card-title">Potential Therapeutic Applications</h3>
+                  <p class="card-sub">Top 3 promising clinical domains evaluated by RDKit molecular descriptors.</p>
                 </div>
-                <button class="btn btn-soft btn-sm" id="btnToggleAllApps">
-                  <i data-lucide="layers"></i> <span id="toggleAllAppsText">Show all 6 domains</span>
-                </button>
               </div>
               <div class="opt-list" id="activeAppList"></div>
             </div>

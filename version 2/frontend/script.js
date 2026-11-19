@@ -773,36 +773,17 @@ function renderActiveApplications(suggestions, prediction) {
     return;
   }
 
-  cachedActiveSuggestions = suggestions;
   container.hidden = false;
-  drawActiveApplicationsList();
-
-  const toggleBtn = $("btnToggleAllApps");
-  if (toggleBtn) {
-    toggleBtn.onclick = () => {
-      showAllActiveApps = !showAllActiveApps;
-      const textSpan = $("toggleAllAppsText");
-      if (textSpan) {
-        textSpan.textContent = showAllActiveApps ? "Show Top 3 only" : "Show all 6 domains";
-      }
-      drawActiveApplicationsList();
-    };
-  }
-}
-
-function drawActiveApplicationsList() {
-  const list = $("activeAppList");
-  if (!list || !cachedActiveSuggestions.length) return;
-
-  const displayList = showAllActiveApps ? cachedActiveSuggestions : cachedActiveSuggestions.slice(0, 3);
+  // Display strictly the top 3 most promising applications
+  const displayList = suggestions.slice(0, 3);
 
   list.innerHTML = displayList.map((item, idx) => `
-    <article class="opt-card app-card ${item.is_top_recommendation ? "top-rec" : ""}" style="animation: rise .5s ${idx * 80}ms var(--ease) both">
+    <article class="opt-card app-card top-rec" style="animation: rise .5s ${idx * 80}ms var(--ease) both">
       <div class="opt-card-header">
-        <span class="opt-card-number app-rank">#${item.rank}</span>
+        <span class="opt-card-number app-rank">#${idx + 1}</span>
         <h4 class="opt-card-title">${escapeHtml(item.title)}</h4>
-        <span class="app-suitability-badge ${item.is_top_recommendation ? "badge-top" : ""}">
-          ${item.is_top_recommendation ? '<i data-lucide="star"></i> Top Match' : "Domain Candidate"} (${item.suitability_score}%)
+        <span class="app-suitability-badge badge-top">
+          <i data-lucide="star"></i> Top Match (${item.suitability_score}%)
         </span>
       </div>
       <div class="app-domain"><i data-lucide="cross"></i> ${escapeHtml(item.domain)}</div>

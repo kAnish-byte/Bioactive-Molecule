@@ -342,7 +342,7 @@ def explain_atom_attribution(mol, bit_info):
         elif "c" in frag_smiles:
             desc = "Aromatic Phenyl Substructure"
 
-        if len(top_substructures) < 5:
+        if len(top_substructures) < 2:
             top_substructures.append({
                 "bit_id": int(bit_id),
                 "importance": round(weight, 5),
