@@ -44,6 +44,7 @@ function startApp() {
   initBatchPrediction();
   initBenchmark();
   initLightbox();
+  initChatbot();
 }
 
 if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", startApp);
@@ -991,6 +992,19 @@ function initSinglePrediction() {
       renderXAI(currentAttribution);
       renderLeadOptimization(data.lead_optimization, data.prediction);
       renderActiveApplications(data.active_suggestions, data.prediction);
+
+      // Update AI Assistant live context
+      window.currentPredictionContext = {
+        molecule_name: data.molecule_name || value,
+        smiles: data.smiles || value,
+        prediction: data.prediction,
+        mol_info: data.mol_info || {},
+        top_substructures: data.atom_attribution?.top_substructures || []
+      };
+      const contextBadge = $("chatMolContextBadge");
+      if (contextBadge) {
+        contextBadge.textContent = `${data.molecule_name || value} · ${data.prediction}`;
+      }
     } catch (err) {
       showError(err.message || "Failed to predict molecule.");
       if (!currentMol3D && $("stageEmpty")) $("stageEmpty").hidden = false;
@@ -1271,4 +1285,122 @@ function escapeHtml(str) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
+}
+
+/* ─── BioPredict Molecular AI Assistant ───────────────────── */
+function initChatbot() {
+  const fab = $("chatFab");
+  const drawer = $("chatDrawer");
+  const btnClose = $("btnCloseChat");
+  const btnClear = $("btnClearChat");
+  const form = $("chatForm");
+  const input = $("chatInput");
+  const messagesBox = $("chatMessages");
+  if (!fab || !drawer) return;
+
+  const toggleDrawer = (open) => {
+    const isOpening = (typeof open === "boolean") ? open : drawer.hidden;
+    drawer.hidden = !isOpening;
+    drawer.setAttribute("aria-hidden", String(!isOpening));
+    if (isOpening) {
+      if (input) input.focus();
+      scrollChatBottom();
+    }
+  };
+
+  fab.addEventListener("click", () => toggleDrawer());
+  btnClose?.addEventListener("click", () => toggleDrawer(false));
+
+  btnClear?.addEventListener("click", () => {
+    if (!messagesBox) return;
+    messagesBox.innerHTML = `
+      <div class="chat-bubble bot">
+        <p>👋 Conversation cleared. Ask me anything about the analyzed compound, COX-2 active site residues, or lead optimization!</p>
+      </div>`;
+  });
+
+  const scrollChatBottom = () => {
+    if (messagesBox) {
+      messagesBox.scrollTop = messagesBox.scrollHeight;
+    }
+  };
+
+  // Quick Chips
+  document.querySelectorAll(".chat-chip").forEach(chip => {
+    chip.addEventListener("click", () => {
+      const q = chip.dataset.question;
+      if (q && input) {
+        input.value = q;
+        form?.dispatchEvent(new Event("submit", { cancelable: true }));
+      }
+    });
+  });
+
+  function formatAiMarkdown(text) {
+    if (!text) return "";
+    let safe = escapeHtml(text);
+    // Bold: **text**
+    safe = safe.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+    // Bullet lists
+    const lines = safe.split("\n");
+    let inList = false;
+    const htmlLines = [];
+    for (const l of lines) {
+      const trimmed = l.trim();
+      if (trimmed.startsWith("* ") || trimmed.startsWith("- ")) {
+        if (!inList) { htmlLines.push("<ul>"); inList = true; }
+        htmlLines.push(`<li>${trimmed.substring(2)}</li>`);
+      } else {
+        if (inList) { htmlLines.push("</ul>"); inList = false; }
+        if (trimmed.length > 0) {
+          htmlLines.push(`<p>${trimmed}</p>`);
+        }
+      }
+    }
+    if (inList) htmlLines.push("</ul>");
+    return htmlLines.join("");
+  }
+
+  form?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const text = (input?.value || "").trim();
+    if (!text) return;
+    input.value = "";
+
+    // Append user message
+    const userBubble = document.createElement("div");
+    userBubble.className = "chat-bubble user";
+    userBubble.textContent = text;
+    messagesBox.appendChild(userBubble);
+
+    // Append loading placeholder
+    const loadingBubble = document.createElement("div");
+    loadingBubble.className = "chat-bubble bot loading-bubble";
+    loadingBubble.innerHTML = `<span class="chat-dot"></span><span class="chat-dot"></span><span class="chat-dot"></span><span>Analyzing chemistry…</span>`;
+    messagesBox.appendChild(loadingBubble);
+    scrollChatBottom();
+
+    try {
+      const res = await fetch(`${API_BASE}/api/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: text,
+          molecule_context: window.currentPredictionContext || null
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.detail || "Unable to reach molecular AI assistant.");
+      }
+      loadingBubble.className = "chat-bubble bot";
+      loadingBubble.innerHTML = formatAiMarkdown(data.reply);
+    } catch (err) {
+      loadingBubble.className = "chat-bubble bot";
+      loadingBubble.innerHTML = `<p style="color: var(--rose);">⚠️ ${escapeHtml(err.message)}</p>`;
+    } finally {
+      scrollChatBottom();
+      refreshIcons();
+    }
+  });
 }

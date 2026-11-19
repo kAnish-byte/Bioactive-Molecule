@@ -60,6 +60,17 @@ PROJECT_ROOT = os.path.dirname(CURRENT_DIR)
 if PROJECT_ROOT not in sys.path:
     sys.path.insert(0, PROJECT_ROOT)
 
+# Load environment variables from .env (API keys are never hardcoded)
+try:
+    from dotenv import load_dotenv
+    load_dotenv(os.path.join(PROJECT_ROOT, ".env"))
+    load_dotenv(os.path.join(CURRENT_DIR, ".env"))
+    load_dotenv()
+except Exception:
+    pass
+
+GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "").strip()
+
 MODEL_DIR = os.path.join(CURRENT_DIR, "model")
 MODEL_PATH = os.path.join(MODEL_DIR, "best_model.pkl")
 METADATA_PATH = os.path.join(MODEL_DIR, "metadata.json")
@@ -873,6 +884,100 @@ def predict(request: PredictRequest):
         "lead_optimization": lead_optimization,
         "active_suggestions": active_suggestions
     }
+
+
+# ── AI Molecular Chatbot Endpoint ─────────────────────────────────────────────
+class ChatMessage(BaseModel):
+    role: str
+    content: str
+
+
+class ChatRequest(BaseModel):
+    message: str
+    molecule_context: Optional[dict] = None
+    history: Optional[list[ChatMessage]] = None
+
+
+SYSTEM_PROMPT_RESTRICTED = """You are BioPredict Molecular AI, a specialized scientific computational chemist and academic pharmacology assistant built into the BioPredict COX-2 Virtual Screening Platform.
+
+STRICT DOMAIN RESTRICTION:
+You are strictly limited to answering questions related to this project, namely:
+1. Cyclooxygenase-2 (COX-2 / PTGS2) biology, structure, active site residues (Arg513, Val523, His90, Arg120, Tyr355, Ser530), and selectivity mechanisms over COX-1.
+2. The specific molecule currently inspected by the user (structure, 3D conformer, functional groups, Morgan fingerprint bits, RDKit descriptors like MW, LogP, TPSA, HBD, HBA).
+3. The bioactivity classification verdict (Active vs Inactive against COX-2, IC50 cutoff of 1000 nM).
+4. Medicinal chemistry and lead optimization (structural modifications, bioisosteres, diaryl heterocycles, sulfonamide/methylsulfonyl pharmacophores).
+5. Computational screening methodology (XGBoost ML modeling, 10-fold cross validation, holdout validation, confusion matrix metrics).
+
+STRICT OFF-TOPIC REFUSAL RULE:
+If the user asks any question that is NOT related to chemistry, pharmacology, COX-2, molecular structures, or this virtual screening research project (for example: coding unrelated software, general chit-chat, history, politics, sports, creative writing, advice, etc.), you MUST politely decline with:
+"I am the BioPredict Molecular AI Assistant, specialized exclusively in COX-2 drug discovery and chemical bioactivity analysis for this project. Please ask questions related to the analyzed compound, COX-2 inhibition, or the virtual screening platform."
+
+Style Guidelines:
+- Keep answers scientific, clear, concise, and educational (2 to 4 paragraphs maximum).
+- Cite specific chemical groups, descriptors, or active site amino acids whenever relevant.
+- Use markdown formatting with bold terms for readability.
+"""
+
+
+@app.post("/api/chat")
+async def chat_with_ai(request: ChatRequest):
+    """
+    AI molecular chatbot assistant grounded with live molecule context.
+    Restricted strictly to project and chemistry topics.
+    """
+    user_msg = request.message.strip()
+    if not user_msg:
+        raise HTTPException(status_code=422, detail="Message cannot be empty.")
+
+    api_key = os.environ.get("GEMINI_API_KEY", GEMINI_API_KEY).strip()
+    if not api_key:
+        raise HTTPException(
+            status_code=503,
+            detail="Gemini API Key is not configured. Please add GEMINI_API_KEY to your .env file."
+        )
+
+    # Build contextual prompt with current molecule data if available
+    context_str = ""
+    ctx = request.molecule_context or {}
+    if ctx and (ctx.get("smiles") or ctx.get("molecule_name")):
+        mol_name = ctx.get("molecule_name") or "Compound"
+        smiles = ctx.get("smiles", "Unknown")
+        pred = ctx.get("prediction", "Unknown")
+        info = ctx.get("mol_info") or {}
+        subs = ctx.get("top_substructures") or []
+        subs_text = ", ".join([f"{s.get('description', '')} ({s.get('fragment_smiles', '')})" for s in subs[:2]]) if subs else "Standard pharmacophore profile"
+        
+        context_str = f"""
+[CURRENT MOLECULE UNDER INSPECTION]:
+- Compound Name: {mol_name}
+- Canonical SMILES: {smiles}
+- Bioactivity Verdict: {pred} against COX-2
+- Molecular Formula: {info.get('formula', '—')} | Molecular Weight: {info.get('mol_weight', '—')} g/mol
+- Heavy Atoms: {info.get('num_atoms', '—')} | Bonds: {info.get('num_bonds', '—')}
+- Key XAI Pharmacophore Drivers: {subs_text}
+"""
+
+    full_prompt = f"{SYSTEM_PROMPT_RESTRICTED}\n\n{context_str}\n\n[USER QUESTION]: {user_msg}\n\n[YOUR SCIENTIFIC RESPONSE]:"
+
+    try:
+        from google import genai
+        client = genai.Client(api_key=api_key)
+        
+        # gemini-3.5-flash-lite delivers fast, reliable, low-latency chemistry answers
+        response = client.models.generate_content(
+            model="gemini-3.5-flash-lite",
+            contents=full_prompt
+        )
+        reply_text = response.text.strip() if response and response.text else "Unable to generate response."
+        return {"reply": reply_text}
+    except Exception as e:
+        err_msg = str(e)
+        if "API_KEY" in err_msg or "403" in err_msg:
+            raise HTTPException(status_code=403, detail="Gemini authentication failure. Please check your API key.")
+        elif "503" in err_msg or "UNAVAILABLE" in err_msg:
+            raise HTTPException(status_code=503, detail="Gemini service is temporarily experiencing high demand. Please try again in a few moments.")
+        else:
+            raise HTTPException(status_code=500, detail=f"AI Assistant Error: {err_msg}")
 
 
 @app.post("/predict_batch")

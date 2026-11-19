@@ -323,6 +323,52 @@
 
   <div class="toast" id="toast" role="status" aria-live="polite"></div>
 
+  <!-- AI Molecular Copilot Floating Trigger & Drawer -->
+  <button class="chat-fab" id="chatFab" aria-label="Open Molecular AI Assistant">
+    <span class="chat-fab-pulse"></span>
+    <i data-lucide="bot"></i>
+    <span class="chat-fab-label">Ask AI Chemist</span>
+  </button>
+
+  <div class="chat-drawer" id="chatDrawer" hidden aria-hidden="true">
+    <div class="chat-drawer-header">
+      <div class="chat-header-info">
+        <span class="chat-bot-avatar"><i data-lucide="bot"></i></span>
+        <div>
+          <h3 class="chat-title">BioPredict AI Chemist</h3>
+          <p class="chat-subtitle" id="chatMolContextBadge">Ready · Awaiting molecule</p>
+        </div>
+      </div>
+      <div class="chat-header-actions">
+        <button class="chat-action-btn" id="btnClearChat" title="Clear conversation"><i data-lucide="trash-2"></i></button>
+        <button class="chat-action-btn" id="btnCloseChat" title="Close"><i data-lucide="x"></i></button>
+      </div>
+    </div>
+
+    <div class="chat-messages" id="chatMessages">
+      <div class="chat-bubble bot">
+        <p>👋 Hello! I am your <strong>BioPredict AI Molecular Assistant</strong>, specialized in COX-2 virtual screening and computational medicinal chemistry.</p>
+        <p>Predict any molecule above, then ask me about its <strong>binding mode, structural drivers, lead optimization, or clinical domains</strong>!</p>
+      </div>
+    </div>
+
+    <!-- Quick Question Chips -->
+    <div class="chat-chips" id="chatChips">
+      <button type="button" class="chat-chip" data-question="Why was this compound predicted Active/Inactive?">💡 Why this verdict?</button>
+      <button type="button" class="chat-chip" data-question="Explain how this molecule binds into the COX-2 secondary pocket.">🧬 Binding pocket</button>
+      <button type="button" class="chat-chip" data-question="What chemical modifications would improve COX-2 selectivity and affinity?">🔬 Lead optimization</button>
+      <button type="button" class="chat-chip" data-question="What are the main therapeutic and clinical applications?">💊 Clinical domains</button>
+    </div>
+
+    <!-- Input Form -->
+    <form class="chat-input-form" id="chatForm">
+      <input type="text" id="chatInput" placeholder="Ask about this molecule or COX-2..." autocomplete="off" />
+      <button type="submit" id="btnSendChat" aria-label="Send question">
+        <i data-lucide="send"></i>
+      </button>
+    </form>
+  </div>
+
   <script src="/app/script.js"></script>
 </body>
 </html>
