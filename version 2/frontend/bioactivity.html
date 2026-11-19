@@ -1,0 +1,322 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="Guide to Molecular Bioactivity — Understand what makes molecules bioactive: chiral carbons, non-superimposable mirror images, pharmacophores, and COX-2 active site complementarity." />
+  <meta name="theme-color" content="#f4f8f7" />
+  <title>Molecular Basis of Bioactivity — BioPredict Guide</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/app/style.css" />
+
+  <!-- Lucide icons -->
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+  <script>
+    if (!window.lucide) {
+      document.write('<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"><\\/script>');
+    }
+  </script>
+</head>
+<body>
+  <a class="skip-link" href="#main-content">Skip to content</a>
+
+  <!-- Ambient background -->
+  <div class="ambient" aria-hidden="true">
+    <div class="grid-fade"></div>
+  </div>
+
+  <!-- Navigation -->
+  <header class="navbar" id="navbar">
+    <div class="container nav-inner">
+      <a href="/app/" class="brand" aria-label="BioPredict home">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 32 32" width="22" height="22" fill="none">
+            <line x1="16" y1="16" x2="7" y2="8" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity=".55"/>
+            <line x1="16" y1="16" x2="25" y2="8" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity=".55"/>
+            <line x1="16" y1="16" x2="16" y2="27" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity=".55"/>
+            <circle cx="16" cy="16" r="5" fill="currentColor"/>
+            <circle cx="7" cy="8" r="3" fill="currentColor" opacity=".8"/>
+            <circle cx="25" cy="8" r="3" fill="currentColor" opacity=".8"/>
+            <circle cx="16" cy="27" r="3" fill="currentColor" opacity=".8"/>
+          </svg>
+        </span>
+        <span class="brand-text">
+          <span class="brand-title">BioPredict</span>
+          <span class="brand-tag">Drug Discovery AI</span>
+        </span>
+      </a>
+
+      <nav class="nav-links" id="navLinks" aria-label="Primary">
+        <a href="/app/" data-page="home">Home</a>
+        <a href="/app/predict" data-page="predict">Prediction</a>
+        <a href="/app/batch" data-page="batch">Batch Screening</a>
+        <a href="/app/benchmark" data-page="benchmark">Benchmark</a>
+        <a href="/app/bioactivity-guide" data-page="bioactivity" class="active" aria-current="page">Bioactivity Guide</a>
+        <a href="/app/about" data-page="about">About</a>
+      </nav>
+
+      <div class="nav-right">
+        <div class="status-pill" id="serverStatus" title="FastAPI backend status" role="status" aria-live="polite">
+          <span class="status-dot" id="statusDot"></span>
+          <span class="status-text" id="statusText">Checking…</span>
+        </div>
+        <button class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false" aria-controls="navLinks">
+          <i data-lucide="menu"></i>
+        </button>
+      </div>
+    </div>
+    <div class="scroll-progress" id="scrollProgress" aria-hidden="true"></div>
+  </header>
+
+  <!-- Hero Header -->
+  <main id="main-content">
+    <section class="page-hero">
+      <div class="container">
+        <div class="hero-chip">
+          <i data-lucide="sparkles"></i>
+          <span>Medicinal Chemistry Fundamentals</span>
+        </div>
+        <h1 class="page-title">What Makes a Molecule Bioactive?</h1>
+        <p class="page-lead">
+          Bioactivity is not random: it is governed by spatial stereochemistry, chiral carbon centers, 
+          non-superimposable mirror geometries, and 3D complementary interactions with biological receptor pockets.
+        </p>
+      </div>
+    </section>
+
+    <!-- Content Sections -->
+    <section class="section">
+      <div class="container" style="max-width: 960px;">
+
+        <!-- 1. Chirality & Chiral Carbons -->
+        <article class="card bio-guide-card reveal">
+          <div class="card-head">
+            <span class="card-icon amber"><i data-lucide="hand"></i></span>
+            <div>
+              <h2 class="card-title">1. Chiral Carbons &amp; Asymmetric Centers</h2>
+              <p class="card-sub">The fundamental origin of molecular handedness</p>
+            </div>
+          </div>
+          <div class="guide-body">
+            <p>
+              A <strong>chiral carbon</strong> (also called an asymmetric carbon or stereocenter) is an $sp^3$-hybridized carbon atom bonded to <strong>four distinct chemical groups</strong>. Because of tetrahedral geometry ($109.5^\circ$ bond angles), four unique substituents can be arranged in space in two different, non-interchangeable 3D configurations without breaking covalent bonds.
+            </p>
+            <div class="callout-box">
+              <div class="callout-icon"><i data-lucide="info"></i></div>
+              <div>
+                <strong>Why it dictates bioactivity:</strong>
+                Biological enzymes and receptors are constructed exclusively from chiral L-amino acids. Because the target pocket itself is intrinsically asymmetric, it recognizes and binds the spatial orientation of substituents with strict stereospecificity.
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <!-- 2. Non-Superimposable Mirror Images (Enantiomers) -->
+        <article class="card bio-guide-card reveal" style="--delay: 60ms">
+          <div class="card-head">
+            <span class="card-icon"><i data-lucide="copy"></i></span>
+            <div>
+              <h2 class="card-title">2. Non-Superimposable Mirror Images (Enantiomers)</h2>
+              <p class="card-sub">The "Left-Hand and Right-Hand Glove" principle of pharmacology</p>
+            </div>
+          </div>
+          <div class="guide-body">
+            <p>
+              Molecules that are mirror images of each other but <strong>cannot be superimposed</strong> onto one another are termed <strong>enantiomers</strong>. Just as your left hand cannot be neatly fitted into a right-handed glove, two enantiomers interact with proteins in fundamentally different ways:
+            </p>
+
+            <div class="concept-grid">
+              <div class="concept-card">
+                <div class="concept-head">
+                  <span class="badge badge-active">Eutomer</span>
+                  <strong>The Active Enantiomer</strong>
+                </div>
+                <p>
+                  The stereoisomer that exhibits optimal spatial fit into the receptor's binding cavity, establishing critical hydrogen bonds, salt bridges, and $\pi$–$\pi$ aromatic stacking.
+                </p>
+              </div>
+
+              <div class="concept-card">
+                <div class="concept-head">
+                  <span class="badge badge-inactive">Distomer</span>
+                  <strong>The Inactive / Adverse Mirror</strong>
+                </div>
+                <p>
+                  The mirror enantiomer that either fails to engage key catalytic residues (resulting in zero bioactivity) or interacts with secondary off-target proteins causing toxicity.
+                </p>
+              </div>
+            </div>
+
+            <!-- Easson-Stedman 3-Point Model Diagram -->
+            <div class="diagram-box">
+              <h4 style="margin: 0 0 10px; color: var(--ink);">The Easson-Stedman Three-Point Receptor Binding Model</h4>
+              <p style="font-size: .88rem; color: var(--ink-2); margin-bottom: 16px;">
+                High-affinity bioactivity requires at least three simultaneous complementary interactions between the chiral drug molecule ($A, B, C$) and the enzyme binding pockets ($A', B', C'$).
+              </p>
+              <div class="receptor-diagram">
+                <div class="mirror-half">
+                  <div class="diagram-badge success">Active Enantiomer (R/S Fit)</div>
+                  <div class="points-row">
+                    <span class="point active">A ➔ A' (H-Bond)</span>
+                    <span class="point active">B ➔ B' (Hydrophobic)</span>
+                    <span class="point active">C ➔ C' (Ionic Salt Bridge)</span>
+                  </div>
+                  <strong style="color: var(--primary); font-size: .9rem;">3 of 3 points aligned ➔ Potent Bioactivity</strong>
+                </div>
+                <div class="mirror-divider">Mirror Plane</div>
+                <div class="mirror-half">
+                  <div class="diagram-badge error">Mirror Enantiomer (Misfit)</div>
+                  <div class="points-row">
+                    <span class="point active">A ➔ A' (H-Bond)</span>
+                    <span class="point failed">C ✖ B' (Mismatch)</span>
+                    <span class="point failed">B ✖ C' (Mismatch)</span>
+                  </div>
+                  <strong style="color: var(--rose); font-size: .9rem;">Only 1 point aligned ➔ Inactive / Repelled</strong>
+                </div>
+              </div>
+            </div>
+
+            <div class="real-world-examples">
+              <h4 style="margin: 16px 0 8px; color: var(--ink);">Classic Pharmacological Examples</h4>
+              <ul class="example-bullets">
+                <li>
+                  <strong>Ibuprofen:</strong> The <em>(S)</em>-enantiomer is a potent COX inhibitor providing anti-inflammatory relief, whereas the <em>(R)</em>-enantiomer has negligible direct inhibitory action on COX enzymes.
+                </li>
+                <li>
+                  <strong>Thalidomide:</strong> The <em>(R)</em>-enantiomer acted as an effective sedative; the mirror <em>(S)</em>-enantiomer caused devastating teratogenic limb malformations.
+                </li>
+                <li>
+                  <strong>L-Dopa:</strong> Only the <em>L</em>-enantiomer traverses the blood-brain barrier and converts to dopamine in Parkinson's patients; <em>D</em>-dopa causes granulocytopenia and severe off-target reactions.
+                </li>
+              </ul>
+            </div>
+          </div>
+        </article>
+
+        <!-- 3. Key Physicochemical Drivers of Bioactivity -->
+        <article class="card bio-guide-card reveal" style="--delay: 100ms">
+          <div class="card-head">
+            <span class="card-icon green"><i data-lucide="layers"></i></span>
+            <div>
+              <h2 class="card-title">3. The 5 Physicochemical Pillars of Bioactivity</h2>
+              <p class="card-sub">Parameters calculated by RDKit and evaluated by our XGBoost classifier</p>
+            </div>
+          </div>
+          <div class="guide-body">
+            <div class="pillars-list">
+              <div class="pillar-row">
+                <div class="pillar-title">
+                  <i data-lucide="anchor"></i>
+                  <strong>1. Specific Pharmacophore Anchors</strong>
+                </div>
+                <p>
+                  Functional groups with localized electrostatic charges or electron pairs that anchor into enzyme side-pockets. For Cyclooxygenase-2, a <strong>para-sulfonamide ($-SO_2NH_2$)</strong> or <strong>methylsulfonyl ($-SO_2CH_3$)</strong> group fits into the unique secondary pocket formed by Arg513, His90, and Gln192.
+                </p>
+              </div>
+
+              <div class="pillar-row">
+                <div class="pillar-title">
+                  <i data-lucide="droplet"></i>
+                  <strong>2. Lipophilicity (MolLogP)</strong>
+                </div>
+                <p>
+                  Measures the partition coefficient between octanol and water. Optimal bioactivity requires $LogP$ between $1.5$ and $4.5$: sufficient hydrophobicity to cross cell membranes and enter hydrophobic enzymatic channels, while remaining water-soluble enough for systemic circulation.
+                </p>
+              </div>
+
+              <div class="pillar-row">
+                <div class="pillar-title">
+                  <i data-lucide="circle-dot"></i>
+                  <strong>3. Topological Polar Surface Area (TPSA)</strong>
+                </div>
+                <p>
+                  The surface sum of all polar atoms (oxygens, nitrogens, and attached hydrogens). Compounds with $TPSA < 140\text{ \AA}^2$ have good gastrointestinal absorption; compounds targeting neuroinflammation require $TPSA < 90\text{ \AA}^2$ to cross the blood-brain barrier.
+                </p>
+              </div>
+
+              <div class="pillar-row">
+                <div class="pillar-title">
+                  <i data-lucide="link"></i>
+                  <strong>4. Hydrogen Bond Donors &amp; Acceptors (HBD / HBA)</strong>
+                </div>
+                <p>
+                  Directional non-covalent forces that stabilize the drug–receptor complex. Governed by Lipinski's Rule of 5: active drug leads typically possess $\le 5$ H-bond donors and $\le 10$ H-bond acceptors to avoid high desolvation energy penalties upon binding.
+                </p>
+              </div>
+
+              <div class="pillar-row">
+                <div class="pillar-title">
+                  <i data-lucide="orbit"></i>
+                  <strong>5. Conformational Rigidity vs. Flexibility</strong>
+                </div>
+                <p>
+                  Too many freely rotatable bonds ($>10$) cause high entropic loss when the molecule freezes into its bound conformation. Diaryl scaffolds (like celecoxib's rigid pyrazole core) lock aromatic rings at fixed angles, drastically lowering the entropic barrier to binding.
+                </p>
+              </div>
+            </div>
+          </div>
+        </article>
+
+        <!-- 4. How BioPredict Machine Learning Learns This -->
+        <article class="card bio-guide-card reveal" style="--delay: 140ms">
+          <div class="card-head">
+            <span class="card-icon purple"><i data-lucide="cpu"></i></span>
+            <div>
+              <h2 class="card-title">4. How Our AI Encodes Molecular Bioactivity</h2>
+              <p class="card-sub">From 2D SMILES strings to 2048-bit Morgan Circular Fingerprints</p>
+            </div>
+          </div>
+          <div class="guide-body">
+            <p>
+              Traditional chemical descriptors reduce a molecule to summary numbers. Our machine learning pipeline featurizes each molecule using <strong>Morgan circular fingerprints (ECFP4-style, radius=2, 2048-bit)</strong> calculated via RDKit:
+            </p>
+            <ol class="steps-list">
+              <li>
+                <strong>Atomic Environment Extraction:</strong> Around every atom, RDKit traces circular paths of radius 1 and 2 bonds, capturing exact stereocenters, branching points, and functional group environments.
+              </li>
+              <li>
+                <strong>Hashing to Fixed-Length Vector:</strong> These chemical substructures are mapped through a deterministic hashing algorithm into a 2048-bit binary array.
+              </li>
+              <li>
+                <strong>Gradient-Boosted Decision Trees:</strong> XGBoost examines thousands of validated ChEMBL bioassays to discover which specific combinations of bits correlate with sub-micromolar inhibition ($IC_{50} \le 1,000\text{ nM}$).
+              </li>
+            </ol>
+            <div style="margin-top: 24px; text-align: center;">
+              <a href="/app/predict" class="btn btn-primary">
+                <i data-lucide="zap"></i> Try a Molecule on the Prediction Platform
+              </a>
+            </div>
+          </div>
+        </article>
+
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer class="footer">
+    <div class="container footer-inner">
+      <div class="brand small">
+        <span class="brand-mark" aria-hidden="true"><i data-lucide="atom"></i></span>
+        <span class="brand-title">BioPredict</span>
+      </div>
+      <p>COX-2 bioactivity prediction for research and education. Not for clinical use.</p>
+      <nav class="footer-links" aria-label="Resources">
+        <a href="/app/">Home</a>
+        <a href="/app/predict">Prediction</a>
+        <a href="/app/batch">Batch Screening</a>
+        <a href="/app/benchmark">Benchmark</a>
+        <a href="/app/bioactivity-guide">Bioactivity Guide</a>
+        <a href="/app/about">About</a>
+      </nav>
+    </div>
+  </footer>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="/app/script.js"></script>
+</body>
+</html>
