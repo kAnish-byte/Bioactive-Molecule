@@ -905,6 +905,8 @@ class ExportDossierRequest(BaseModel):
     probability: Optional[float] = None
     mol_info: Optional[dict] = None
     top_substructures: Optional[list[dict]] = None
+    active_suggestions: Optional[list[dict]] = None
+    lead_optimization: Optional[list[dict]] = None
     timestamp: Optional[str] = None
 
 
@@ -915,6 +917,8 @@ def generate_dossier_pdf_buffer(
     probability: Optional[float] = None,
     mol_info: Optional[dict] = None,
     top_substructures: Optional[list[dict]] = None,
+    active_suggestions: Optional[list[dict]] = None,
+    lead_optimization: Optional[list[dict]] = None,
     timestamp: Optional[str] = None
 ) -> io.BytesIO:
     """
@@ -924,6 +928,7 @@ def generate_dossier_pdf_buffer(
       - RDKit 2D Structure Diagram
       - Bioactivity Classification & Calibrated Confidence Score
       - Key Structural Alerts (XAI feature contributions)
+      - Potential Therapeutic Applications (for Active compounds) / Lead Optimization (for Inactives)
       - Date and screening timestamp
     """
     if not timestamp:
@@ -995,9 +1000,9 @@ def generate_dossier_pdf_buffer(
     )
     ax.text(0.06, 0.825, status_summary, fontsize=8.8, color="#1e293b", va="center", zorder=3, linespacing=1.3)
 
-    # 3. Left Column: Molecule Info & Properties Card
-    draw_card(0.04, 0.445, 0.45, 0.33, "#ffffff", "#cbd5e1")
-    ax.text(0.06, 0.755, "COMPOUND IDENTIFICATION & PROPERTIES", fontsize=10, fontweight="bold", color="#0f766e", zorder=3)
+    # 3. Middle Row - Left: Molecule Info & Properties
+    draw_card(0.04, 0.455, 0.45, 0.32, "#ffffff", "#cbd5e1")
+    ax.text(0.06, 0.755, "COMPOUND IDENTIFICATION & PROPERTIES", fontsize=9.5, fontweight="bold", color="#0f766e", zorder=3)
 
     info = mol_info or {}
     formula = info.get("formula", rdMolDescriptors.CalcMolFormula(mol))
@@ -1021,62 +1026,120 @@ def generate_dossier_pdf_buffer(
     ]
     curr_y = 0.725
     for line in info_lines:
-        ax.text(0.06, curr_y, line, fontsize=8.2, color="#334155", va="center", zorder=3)
-        curr_y -= 0.024
+        ax.text(0.06, curr_y, line, fontsize=8.0, color="#334155", va="center", zorder=3)
+        curr_y -= 0.023
 
     # Smiles Box inside Left Card
-    ax.text(0.06, curr_y - 0.005, "Canonical SMILES:", fontsize=8, fontweight="bold", color="#0f172a", zorder=3)
+    ax.text(0.06, curr_y - 0.005, "Canonical SMILES:", fontsize=7.8, fontweight="bold", color="#0f172a", zorder=3)
     wrapped_smiles = textwrap.fill(clean_smiles, width=44)
-    ax.text(0.06, curr_y - 0.035, wrapped_smiles, fontsize=7.2, family="monospace", color="#475569", va="top", zorder=3)
+    ax.text(0.06, curr_y - 0.032, wrapped_smiles, fontsize=7.0, family="monospace", color="#475569", va="top", zorder=3)
 
-    # 4. Right Column: 2D Chemical Structure Card
-    draw_card(0.51, 0.445, 0.45, 0.33, "#ffffff", "#cbd5e1")
-    ax.text(0.53, 0.755, "2D MOLECULAR STRUCTURE (RDKit RENDER)", fontsize=10, fontweight="bold", color="#0f766e", zorder=3)
-    ax.imshow(img, extent=[0.525, 0.945, 0.455, 0.735], aspect="auto", zorder=2)
+    # Middle Row - Right: 2D Chemical Structure
+    draw_card(0.51, 0.455, 0.45, 0.32, "#ffffff", "#cbd5e1")
+    ax.text(0.53, 0.755, "2D MOLECULAR STRUCTURE (RDKit RENDER)", fontsize=9.5, fontweight="bold", color="#0f766e", zorder=3)
+    ax.imshow(img, extent=[0.525, 0.945, 0.465, 0.735], aspect="auto", zorder=2)
 
-    # 5. Bottom Section: Key Structural Alerts (XAI Feature Contributions)
-    draw_card(0.04, 0.11, 0.92, 0.315, "#ffffff", "#cbd5e1")
-    ax.text(0.06, 0.405, "KEY STRUCTURAL ALERTS & EXPLAINABLE AI (XAI) ATTRIBUTION", fontsize=10, fontweight="bold", color="#0f766e", zorder=3)
+    # 4. Bottom Row - Left: Key Structural Alerts (XAI Attribution)
+    draw_card(0.04, 0.105, 0.45, 0.33, "#ffffff", "#cbd5e1")
+    ax.text(0.06, 0.415, "KEY STRUCTURAL ALERTS (XAI)", fontsize=9.5, fontweight="bold", color="#0f766e", zorder=3)
+    ax.text(0.06, 0.392, "Top fingerprint fragments driving model votes:", fontsize=7.8, color="#64748b", va="center", zorder=3)
 
-    xai_intro = (
-        "Our Explainable AI engine isolates the exact Morgan fingerprint sub-fragments driving the XGBoost tree decisions.\n"
-        "Below are the primary functional pharmacophore fragments detected in this compound:"
-    )
-    ax.text(0.06, 0.375, xai_intro, fontsize=8.2, color="#475569", va="top", zorder=3, linespacing=1.25)
-
-    alert_y = 0.325
+    alert_y = 0.355
     if top_substructures and len(top_substructures) > 0:
         for i, sub in enumerate(top_substructures[:2]):
             desc = sub.get("description", f"Key Substructure Fragment {i+1}")
             frag_smiles = sub.get("fragment_smiles", "N/A")
             weight = sub.get("weight", 0.0)
 
-            patches_box = patches.Rectangle((0.055, alert_y - 0.06), 0.89, 0.068, facecolor="#f8fafc", edgecolor="#e2e8f0", linewidth=0.8, zorder=2)
+            patches_box = patches.Rectangle((0.055, alert_y - 0.075), 0.42, 0.082, facecolor="#f8fafc", edgecolor="#e2e8f0", linewidth=0.8, zorder=2)
             ax.add_patch(patches_box)
-            ax.text(0.07, alert_y - 0.012, f"● Alert {i+1}: {desc}", fontsize=8.6, fontweight="bold", color="#0f172a", va="center", zorder=3)
-            ax.text(0.07, alert_y - 0.038, f"Fragment SMILES: {frag_smiles}   |   Feature Impact Weight: {weight:+.4f}", fontsize=7.8, family="monospace", color="#0369a1", va="center", zorder=3)
-            alert_y -= 0.082
+            ax.text(0.065, alert_y - 0.015, f"● Alert {i+1}: {desc}", fontsize=8.0, fontweight="bold", color="#0f172a", va="center", zorder=3)
+            ax.text(0.065, alert_y - 0.038, f"SMILES: {frag_smiles}", fontsize=7.0, family="monospace", color="#0369a1", va="center", zorder=3)
+            impact_text = f"Feature Impact Weight: {weight:+.4f}"
+            ax.text(0.065, alert_y - 0.058, impact_text, fontsize=7.0, color="#16a34a" if weight >= 0 else "#dc2626", va="center", zorder=3)
+            alert_y -= 0.095
     else:
         default_alerts = [
-            ("Primary Secondary Pocket Anchor", "Para-sulfonamide or methylsulfonyl group targeting Arg513, His90, Gln192.", "Positive driver"),
-            ("Rigid Diaryl Heterocycle Scaffold", "Central heterocyclic core positioning phenyl substituents at optimal 120° dihedral angle.", "Positive driver")
+            ("Primary Secondary Pocket Anchor", "Para-sulfonamide or methylsulfonyl group targeting Arg513, His90, Gln192.", "Positive"),
+            ("Rigid Diaryl Heterocycle Scaffold", "Central core positioning phenyl substituents at 120° dihedral angle.", "Positive")
         ] if is_active else [
-            ("Missing Sulfonamide / Methylsulfonyl Anchor", "Molecule lacks electrostatic anchoring into the COX-2 secondary pocket.", "Negative impact"),
-            ("Low Selectivity Scaffold Profile", "Non-selective or flexible backbone susceptible to constitutive COX-1 inhibition.", "Negative impact")
+            ("Missing Sulfonamide Anchor", "Molecule lacks electrostatic anchoring into the COX-2 secondary pocket.", "Negative"),
+            ("Flexible Non-Selective Scaffold", "Linear/flexible backbone susceptible to off-target COX-1 inhibition.", "Negative")
         ]
         for i, (title, desc, impact) in enumerate(default_alerts):
-            patches_box = patches.Rectangle((0.055, alert_y - 0.06), 0.89, 0.068, facecolor="#f8fafc", edgecolor="#e2e8f0", linewidth=0.8, zorder=2)
+            patches_box = patches.Rectangle((0.055, alert_y - 0.075), 0.42, 0.082, facecolor="#f8fafc", edgecolor="#e2e8f0", linewidth=0.8, zorder=2)
             ax.add_patch(patches_box)
-            ax.text(0.07, alert_y - 0.012, f"● Alert {i+1}: {title}", fontsize=8.6, fontweight="bold", color="#0f172a", va="center", zorder=3)
-            ax.text(0.07, alert_y - 0.038, f"{desc}   ({impact})", fontsize=8, color="#475569", va="center", zorder=3)
-            alert_y -= 0.082
+            ax.text(0.065, alert_y - 0.015, f"● Alert {i+1}: {title}", fontsize=8.0, fontweight="bold", color="#0f172a", va="center", zorder=3)
+            wrapped_d = textwrap.fill(desc, width=46)
+            ax.text(0.065, alert_y - 0.040, wrapped_d, fontsize=6.8, color="#475569", va="center", zorder=3)
+            alert_y -= 0.095
 
-    # Verification Note
-    note_box = patches.Rectangle((0.055, 0.125), 0.89, 0.035, facecolor="#f1f5f9", edgecolor="#cbd5e1", linewidth=0.8, zorder=2)
-    ax.add_patch(note_box)
-    ax.text(0.07, 0.142, "Assay Validation Notice: Computational prediction serves as a prioritized hypothesis. In vitro enzyme assays are required for clinical validation.", fontsize=7.5, color="#475569", va="center", zorder=3)
+    # 4. Bottom Row - Right: Potential Therapeutic Applications (Active) OR Lead Optimization (Inactive)
+    draw_card(0.51, 0.105, 0.45, 0.33, "#ffffff", "#cbd5e1")
+    if is_active:
+        ax.text(0.53, 0.415, "POTENTIAL THERAPEUTIC APPLICATIONS", fontsize=9.5, fontweight="bold", color="#0f766e", zorder=3)
+        ax.text(0.53, 0.392, "Evaluated clinical domains & therapeutic rationale:", fontsize=7.8, color="#64748b", va="center", zorder=3)
 
-    # 6. Footer
+        # Retrieve applications
+        apps = active_suggestions or get_active_application_suggestions(mol, clean_smiles)
+        app_y = 0.355
+        if apps:
+            for i, item in enumerate(apps[:2]):
+                title = item.get("title", f"Therapeutic Domain {i+1}")
+                domain = item.get("domain", "Clinical Pharmacology")
+                rationale = item.get("rationale", "High-affinity targeted inhibition against pro-inflammatory COX-2 enzyme.")
+
+                patches_box = patches.Rectangle((0.525, app_y - 0.075), 0.42, 0.082, facecolor="#f0fdf4", edgecolor="#bbf7d0", linewidth=0.8, zorder=2)
+                ax.add_patch(patches_box)
+                ax.text(0.535, app_y - 0.015, f"● {title}", fontsize=7.8, fontweight="bold", color="#065f46", va="center", zorder=3)
+                ax.text(0.535, app_y - 0.035, f"Domain: {domain}", fontsize=7.0, fontweight="bold", color="#047857", va="center", zorder=3)
+                wrapped_rat = textwrap.fill(rationale, width=48)
+                ax.text(0.535, app_y - 0.055, wrapped_rat, fontsize=6.7, color="#334155", va="center", zorder=3)
+                app_y -= 0.095
+        else:
+            default_apps = [
+                ("GI-Sparing Anti-Inflammatory (NSAID)", "Rheumatology & Chronic Pain", "Selective COX-2 inhibition avoids gastric ulceration, ideal for Osteoarthritis & Rheumatoid Arthritis."),
+                ("Colorectal Chemoprevention Candidate", "Oncology & Chemoprevention", "Suppresses elevated COX-2-driven angiogenesis and adenoma polyp proliferation.")
+            ]
+            for i, (title, domain, rationale) in enumerate(default_apps):
+                patches_box = patches.Rectangle((0.525, app_y - 0.075), 0.42, 0.082, facecolor="#f0fdf4", edgecolor="#bbf7d0", linewidth=0.8, zorder=2)
+                ax.add_patch(patches_box)
+                ax.text(0.535, app_y - 0.015, f"● {title}", fontsize=7.8, fontweight="bold", color="#065f46", va="center", zorder=3)
+                ax.text(0.535, app_y - 0.035, f"Domain: {domain}", fontsize=7.0, fontweight="bold", color="#047857", va="center", zorder=3)
+                wrapped_rat = textwrap.fill(rationale, width=48)
+                ax.text(0.535, app_y - 0.055, wrapped_rat, fontsize=6.7, color="#334155", va="center", zorder=3)
+                app_y -= 0.095
+    else:
+        ax.text(0.53, 0.415, "LEAD OPTIMISATION RECOMMENDATIONS", fontsize=9.5, fontweight="bold", color="#0f766e", zorder=3)
+        ax.text(0.53, 0.392, "SAR modifications to achieve COX-2 bioactivity:", fontsize=7.8, color="#64748b", va="center", zorder=3)
+
+        opts = lead_optimization or get_lead_optimization_suggestions(mol, clean_smiles, probability)
+        app_y = 0.355
+        if opts:
+            for i, item in enumerate(opts[:2]):
+                title = item.get("title", f"Optimization Strategy {i+1}")
+                rationale = item.get("description", item.get("rationale", "Modify functional groups to target the secondary binding pocket."))
+
+                patches_box = patches.Rectangle((0.525, app_y - 0.075), 0.42, 0.082, facecolor="#fffbeb", edgecolor="#fde68a", linewidth=0.8, zorder=2)
+                ax.add_patch(patches_box)
+                ax.text(0.535, app_y - 0.015, f"● {title}", fontsize=7.8, fontweight="bold", color="#92400e", va="center", zorder=3)
+                wrapped_rat = textwrap.fill(rationale, width=48)
+                ax.text(0.535, app_y - 0.045, wrapped_rat, fontsize=6.7, color="#334155", va="center", zorder=3)
+                app_y -= 0.095
+        else:
+            default_opts = [
+                ("Introduce Para-Sulfonamide Anchor", "Append a -SO2NH2 group to engage Arg513, His90, and Gln192 in the COX-2 secondary pocket."),
+                ("Construct Diaryl Heterocycle Scaffold", "Rigidify central ring (pyrazole/isoxazole) to optimize 120° phenyl dihedral orientation.")
+            ]
+            for i, (title, desc) in enumerate(default_opts):
+                patches_box = patches.Rectangle((0.525, app_y - 0.075), 0.42, 0.082, facecolor="#fffbeb", edgecolor="#fde68a", linewidth=0.8, zorder=2)
+                ax.add_patch(patches_box)
+                ax.text(0.535, app_y - 0.015, f"● {title}", fontsize=7.8, fontweight="bold", color="#92400e", va="center", zorder=3)
+                wrapped_rat = textwrap.fill(desc, width=48)
+                ax.text(0.535, app_y - 0.045, wrapped_rat, fontsize=6.7, color="#334155", va="center", zorder=3)
+                app_y -= 0.095
+
+    # 5. Footer
     ax.axhline(0.055, color="#cbd5e1", linewidth=0.8, xmin=0.04, xmax=0.96)
     ax.text(0.04, 0.035, "BioPredict Virtual Screening Platform — Human COX-2 Model (ChEMBL230 · XGBoost 82.21% CV Acc)", fontsize=7.8, color="#64748b", va="center")
     ax.text(0.96, 0.035, "https://biopredict-kc9m.onrender.com/app/", fontsize=7.8, color="#0f766e", fontweight="bold", ha="right", va="center")
@@ -1104,8 +1167,19 @@ def export_dossier_post(req: ExportDossierRequest):
             probability=req.probability,
             mol_info=req.mol_info,
             top_substructures=req.top_substructures,
+            active_suggestions=req.active_suggestions,
+            lead_optimization=req.lead_optimization,
             timestamp=req.timestamp
         )
+        return StreamingResponse(
+            pdf_buf,
+            media_type="application/pdf",
+            headers={
+                "Content-Disposition": f'attachment; filename="Bioactivity_Dossier_{safe_name}.pdf"'
+            }
+        )
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Dossier generation failed: {e}")
         return StreamingResponse(
             pdf_buf,
             media_type="application/pdf",

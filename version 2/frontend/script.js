@@ -957,6 +957,8 @@ function initSinglePrediction() {
           probability: ctx.probability,
           mol_info: ctx.mol_info,
           top_substructures: ctx.top_substructures,
+          active_suggestions: ctx.active_suggestions,
+          lead_optimization: ctx.lead_optimization,
           timestamp: new Date().toLocaleString()
         })
       });
@@ -1060,7 +1062,9 @@ function initSinglePrediction() {
         prediction: data.prediction,
         probability: data.probability,
         mol_info: data.mol_info || {},
-        top_substructures: data.atom_attribution?.top_substructures || []
+        top_substructures: data.atom_attribution?.top_substructures || [],
+        active_suggestions: data.active_suggestions || [],
+        lead_optimization: data.lead_optimization || []
       };
       const contextBadge = $("chatMolContextBadge");
       if (contextBadge) {
