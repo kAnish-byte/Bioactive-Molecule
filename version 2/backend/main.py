@@ -959,11 +959,45 @@ async def chat_with_ai(request: ChatRequest):
 
     full_prompt = f"{SYSTEM_PROMPT_RESTRICTED}\n\n{context_str}\n\n[USER QUESTION]: {user_msg}\n\n[YOUR SCIENTIFIC RESPONSE]:"
 
+    # 1. First attempt: Direct REST call via Python standard library urllib (Zero external pip dependencies)
+    direct_url = f"https://generativelanguage.googleapis.com/v1beta/models/gemini-3.5-flash-lite:generateContent?key={api_key}"
+    payload = {
+        "contents": [{"parts": [{"text": full_prompt}]}],
+        "generationConfig": {
+            "temperature": 0.35,
+            "maxOutputTokens": 800
+        }
+    }
+    json_bytes = json.dumps(payload).encode("utf-8")
+    http_req = urllib.request.Request(
+        direct_url,
+        data=json_bytes,
+        headers={"Content-Type": "application/json"}
+    )
+
+    try:
+        with urllib.request.urlopen(http_req, timeout=15) as resp:
+            data = json.loads(resp.read().decode("utf-8"))
+            candidates = data.get("candidates", [])
+            if candidates:
+                parts = candidates[0].get("content", {}).get("parts", [])
+                if parts:
+                    return {"reply": parts[0].get("text", "").strip()}
+            return {"reply": "Unable to generate a scientific response at this moment."}
+    except urllib.error.HTTPError as http_err:
+        err_body = http_err.read().decode("utf-8", errors="ignore")
+        if http_err.code == 403 or "API_KEY" in err_body:
+            raise HTTPException(status_code=403, detail="Gemini authentication failure. Please check your GEMINI_API_KEY.")
+        elif http_err.code == 503 or "UNAVAILABLE" in err_body:
+            raise HTTPException(status_code=503, detail="Gemini service is temporarily busy. Please retry in a moment.")
+        # If model name failed, try SDK fallback below
+    except Exception:
+        pass
+
+    # 2. Second attempt: Fallback to google.genai SDK if installed
     try:
         from google import genai
         client = genai.Client(api_key=api_key)
-        
-        # gemini-3.5-flash-lite delivers fast, reliable, low-latency chemistry answers
         response = client.models.generate_content(
             model="gemini-3.5-flash-lite",
             contents=full_prompt
@@ -973,9 +1007,9 @@ async def chat_with_ai(request: ChatRequest):
     except Exception as e:
         err_msg = str(e)
         if "API_KEY" in err_msg or "403" in err_msg:
-            raise HTTPException(status_code=403, detail="Gemini authentication failure. Please check your API key.")
+            raise HTTPException(status_code=403, detail="Gemini authentication failure. Please check your GEMINI_API_KEY.")
         elif "503" in err_msg or "UNAVAILABLE" in err_msg:
-            raise HTTPException(status_code=503, detail="Gemini service is temporarily experiencing high demand. Please try again in a few moments.")
+            raise HTTPException(status_code=503, detail="Gemini service is temporarily experiencing high demand. Please try again.")
         else:
             raise HTTPException(status_code=500, detail=f"AI Assistant Error: {err_msg}")
 
