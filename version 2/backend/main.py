@@ -1041,23 +1041,24 @@ def generate_dossier_pdf_buffer(
 
     # 4. Bottom Row - Left: Key Structural Alerts (XAI Attribution)
     draw_card(0.04, 0.105, 0.45, 0.33, "#ffffff", "#cbd5e1")
-    ax.text(0.06, 0.415, "KEY STRUCTURAL ALERTS (XAI)", fontsize=9.5, fontweight="bold", color="#0f766e", zorder=3)
-    ax.text(0.06, 0.392, "Top fingerprint fragments driving model votes:", fontsize=7.8, color="#64748b", va="center", zorder=3)
+    ax.text(0.06, 0.418, "KEY STRUCTURAL ALERTS (XAI)", fontsize=9.5, fontweight="bold", color="#0f766e", zorder=3)
+    ax.text(0.06, 0.400, "Top fingerprint fragments driving model votes:", fontsize=7.6, color="#64748b", va="center", zorder=3)
 
-    alert_y = 0.355
+    box_positions_left = [(0.055, 0.258, 0.42, 0.125), (0.055, 0.118, 0.42, 0.125)]
     if top_substructures and len(top_substructures) > 0:
         for i, sub in enumerate(top_substructures[:2]):
             desc = sub.get("description", f"Key Substructure Fragment {i+1}")
             frag_smiles = sub.get("fragment_smiles", "N/A")
             weight = sub.get("weight", 0.0)
 
-            patches_box = patches.Rectangle((0.055, alert_y - 0.075), 0.42, 0.082, facecolor="#f8fafc", edgecolor="#e2e8f0", linewidth=0.8, zorder=2)
+            bx, by, bw, bh = box_positions_left[i]
+            patches_box = patches.Rectangle((bx, by), bw, bh, facecolor="#f8fafc", edgecolor="#e2e8f0", linewidth=0.8, zorder=2)
             ax.add_patch(patches_box)
-            ax.text(0.065, alert_y - 0.015, f"● Alert {i+1}: {desc}", fontsize=8.0, fontweight="bold", color="#0f172a", va="center", zorder=3)
-            ax.text(0.065, alert_y - 0.038, f"SMILES: {frag_smiles}", fontsize=7.0, family="monospace", color="#0369a1", va="center", zorder=3)
-            impact_text = f"Feature Impact Weight: {weight:+.4f}"
-            ax.text(0.065, alert_y - 0.058, impact_text, fontsize=7.0, color="#16a34a" if weight >= 0 else "#dc2626", va="center", zorder=3)
-            alert_y -= 0.095
+            top_y = by + bh
+            ax.text(bx + 0.012, top_y - 0.018, f"● Alert {i+1}: {desc}", fontsize=7.8, fontweight="bold", color="#0f172a", va="center", zorder=3)
+            ax.text(bx + 0.012, top_y - 0.036, f"SMILES: {frag_smiles}", fontsize=7.0, family="monospace", color="#0369a1", va="center", zorder=3)
+            impact_text = f"Feature Impact Weight: {weight:+.4f} (Positive Lead)" if weight >= 0 else f"Feature Impact Weight: {weight:+.4f}"
+            ax.text(bx + 0.012, top_y - 0.052, impact_text, fontsize=6.8, color="#16a34a" if weight >= 0 else "#dc2626", va="center", zorder=3)
     else:
         default_alerts = [
             ("Primary Secondary Pocket Anchor", "Para-sulfonamide or methylsulfonyl group targeting Arg513, His90, Gln192.", "Positive"),
@@ -1067,77 +1068,81 @@ def generate_dossier_pdf_buffer(
             ("Flexible Non-Selective Scaffold", "Linear/flexible backbone susceptible to off-target COX-1 inhibition.", "Negative")
         ]
         for i, (title, desc, impact) in enumerate(default_alerts):
-            patches_box = patches.Rectangle((0.055, alert_y - 0.075), 0.42, 0.082, facecolor="#f8fafc", edgecolor="#e2e8f0", linewidth=0.8, zorder=2)
+            bx, by, bw, bh = box_positions_left[i]
+            patches_box = patches.Rectangle((bx, by), bw, bh, facecolor="#f8fafc", edgecolor="#e2e8f0", linewidth=0.8, zorder=2)
             ax.add_patch(patches_box)
-            ax.text(0.065, alert_y - 0.015, f"● Alert {i+1}: {title}", fontsize=8.0, fontweight="bold", color="#0f172a", va="center", zorder=3)
-            wrapped_d = textwrap.fill(desc, width=46)
-            ax.text(0.065, alert_y - 0.040, wrapped_d, fontsize=6.8, color="#475569", va="center", zorder=3)
-            alert_y -= 0.095
+            top_y = by + bh
+            ax.text(bx + 0.012, top_y - 0.018, f"● Alert {i+1}: {title}", fontsize=7.8, fontweight="bold", color="#0f172a", va="center", zorder=3)
+            wrapped_d = textwrap.fill(desc, width=48)
+            ax.text(bx + 0.012, top_y - 0.040, wrapped_d, fontsize=6.8, color="#475569", va="top", linespacing=1.2, zorder=3)
 
     # 4. Bottom Row - Right: Potential Therapeutic Applications (Active) OR Lead Optimization (Inactive)
     draw_card(0.51, 0.105, 0.45, 0.33, "#ffffff", "#cbd5e1")
+    box_positions_right = [(0.525, 0.258, 0.42, 0.125), (0.525, 0.118, 0.42, 0.125)]
     if is_active:
-        ax.text(0.53, 0.415, "POTENTIAL THERAPEUTIC APPLICATIONS", fontsize=9.5, fontweight="bold", color="#0f766e", zorder=3)
-        ax.text(0.53, 0.392, "Evaluated clinical domains & therapeutic rationale:", fontsize=7.8, color="#64748b", va="center", zorder=3)
+        ax.text(0.53, 0.418, "POTENTIAL THERAPEUTIC APPLICATIONS", fontsize=9.5, fontweight="bold", color="#0f766e", zorder=3)
+        ax.text(0.53, 0.400, "Evaluated clinical domains & therapeutic rationale:", fontsize=7.6, color="#64748b", va="center", zorder=3)
 
         # Retrieve applications
         apps = active_suggestions or get_active_application_suggestions(mol, clean_smiles)
-        app_y = 0.355
         if apps:
             for i, item in enumerate(apps[:2]):
                 title = item.get("title", f"Therapeutic Domain {i+1}")
                 domain = item.get("domain", "Clinical Pharmacology")
                 rationale = item.get("rationale", "High-affinity targeted inhibition against pro-inflammatory COX-2 enzyme.")
 
-                patches_box = patches.Rectangle((0.525, app_y - 0.075), 0.42, 0.082, facecolor="#f0fdf4", edgecolor="#bbf7d0", linewidth=0.8, zorder=2)
+                bx, by, bw, bh = box_positions_right[i]
+                patches_box = patches.Rectangle((bx, by), bw, bh, facecolor="#f0fdf4", edgecolor="#bbf7d0", linewidth=0.8, zorder=2)
                 ax.add_patch(patches_box)
-                ax.text(0.535, app_y - 0.015, f"● {title}", fontsize=7.8, fontweight="bold", color="#065f46", va="center", zorder=3)
-                ax.text(0.535, app_y - 0.035, f"Domain: {domain}", fontsize=7.0, fontweight="bold", color="#047857", va="center", zorder=3)
-                wrapped_rat = textwrap.fill(rationale, width=48)
-                ax.text(0.535, app_y - 0.055, wrapped_rat, fontsize=6.7, color="#334155", va="center", zorder=3)
-                app_y -= 0.095
+                top_y = by + bh
+                ax.text(bx + 0.012, top_y - 0.018, f"● {title}", fontsize=7.8, fontweight="bold", color="#065f46", va="center", zorder=3)
+                ax.text(bx + 0.012, top_y - 0.036, f"Domain: {domain}", fontsize=7.0, fontweight="bold", color="#047857", va="center", zorder=3)
+                clean_rat = textwrap.fill(rationale[:165] + ("..." if len(rationale) > 165 else ""), width=52)
+                ax.text(bx + 0.012, top_y - 0.052, clean_rat, fontsize=6.6, color="#334155", va="top", linespacing=1.2, zorder=3)
         else:
             default_apps = [
                 ("GI-Sparing Anti-Inflammatory (NSAID)", "Rheumatology & Chronic Pain", "Selective COX-2 inhibition avoids gastric ulceration, ideal for Osteoarthritis & Rheumatoid Arthritis."),
                 ("Colorectal Chemoprevention Candidate", "Oncology & Chemoprevention", "Suppresses elevated COX-2-driven angiogenesis and adenoma polyp proliferation.")
             ]
             for i, (title, domain, rationale) in enumerate(default_apps):
-                patches_box = patches.Rectangle((0.525, app_y - 0.075), 0.42, 0.082, facecolor="#f0fdf4", edgecolor="#bbf7d0", linewidth=0.8, zorder=2)
+                bx, by, bw, bh = box_positions_right[i]
+                patches_box = patches.Rectangle((bx, by), bw, bh, facecolor="#f0fdf4", edgecolor="#bbf7d0", linewidth=0.8, zorder=2)
                 ax.add_patch(patches_box)
-                ax.text(0.535, app_y - 0.015, f"● {title}", fontsize=7.8, fontweight="bold", color="#065f46", va="center", zorder=3)
-                ax.text(0.535, app_y - 0.035, f"Domain: {domain}", fontsize=7.0, fontweight="bold", color="#047857", va="center", zorder=3)
-                wrapped_rat = textwrap.fill(rationale, width=48)
-                ax.text(0.535, app_y - 0.055, wrapped_rat, fontsize=6.7, color="#334155", va="center", zorder=3)
-                app_y -= 0.095
+                top_y = by + bh
+                ax.text(bx + 0.012, top_y - 0.018, f"● {title}", fontsize=7.8, fontweight="bold", color="#065f46", va="center", zorder=3)
+                ax.text(bx + 0.012, top_y - 0.036, f"Domain: {domain}", fontsize=7.0, fontweight="bold", color="#047857", va="center", zorder=3)
+                clean_rat = textwrap.fill(rationale[:165] + ("..." if len(rationale) > 165 else ""), width=52)
+                ax.text(bx + 0.012, top_y - 0.052, clean_rat, fontsize=6.6, color="#334155", va="top", linespacing=1.2, zorder=3)
     else:
-        ax.text(0.53, 0.415, "LEAD OPTIMISATION RECOMMENDATIONS", fontsize=9.5, fontweight="bold", color="#0f766e", zorder=3)
-        ax.text(0.53, 0.392, "SAR modifications to achieve COX-2 bioactivity:", fontsize=7.8, color="#64748b", va="center", zorder=3)
+        ax.text(0.53, 0.418, "LEAD OPTIMISATION RECOMMENDATIONS", fontsize=9.5, fontweight="bold", color="#0f766e", zorder=3)
+        ax.text(0.53, 0.400, "SAR modifications to achieve COX-2 bioactivity:", fontsize=7.6, color="#64748b", va="center", zorder=3)
 
         opts = lead_optimization or get_lead_optimization_suggestions(mol, clean_smiles, probability)
-        app_y = 0.355
         if opts:
             for i, item in enumerate(opts[:2]):
                 title = item.get("title", f"Optimization Strategy {i+1}")
                 rationale = item.get("description", item.get("rationale", "Modify functional groups to target the secondary binding pocket."))
 
-                patches_box = patches.Rectangle((0.525, app_y - 0.075), 0.42, 0.082, facecolor="#fffbeb", edgecolor="#fde68a", linewidth=0.8, zorder=2)
+                bx, by, bw, bh = box_positions_right[i]
+                patches_box = patches.Rectangle((bx, by), bw, bh, facecolor="#fffbeb", edgecolor="#fde68a", linewidth=0.8, zorder=2)
                 ax.add_patch(patches_box)
-                ax.text(0.535, app_y - 0.015, f"● {title}", fontsize=7.8, fontweight="bold", color="#92400e", va="center", zorder=3)
-                wrapped_rat = textwrap.fill(rationale, width=48)
-                ax.text(0.535, app_y - 0.045, wrapped_rat, fontsize=6.7, color="#334155", va="center", zorder=3)
-                app_y -= 0.095
+                top_y = by + bh
+                ax.text(bx + 0.012, top_y - 0.018, f"● {title}", fontsize=7.8, fontweight="bold", color="#92400e", va="center", zorder=3)
+                clean_desc = textwrap.fill(rationale[:165] + ("..." if len(rationale) > 165 else ""), width=52)
+                ax.text(bx + 0.012, top_y - 0.045, clean_desc, fontsize=6.6, color="#334155", va="top", linespacing=1.2, zorder=3)
         else:
             default_opts = [
                 ("Introduce Para-Sulfonamide Anchor", "Append a -SO2NH2 group to engage Arg513, His90, and Gln192 in the COX-2 secondary pocket."),
                 ("Construct Diaryl Heterocycle Scaffold", "Rigidify central ring (pyrazole/isoxazole) to optimize 120° phenyl dihedral orientation.")
             ]
             for i, (title, desc) in enumerate(default_opts):
-                patches_box = patches.Rectangle((0.525, app_y - 0.075), 0.42, 0.082, facecolor="#fffbeb", edgecolor="#fde68a", linewidth=0.8, zorder=2)
+                bx, by, bw, bh = box_positions_right[i]
+                patches_box = patches.Rectangle((bx, by), bw, bh, facecolor="#fffbeb", edgecolor="#fde68a", linewidth=0.8, zorder=2)
                 ax.add_patch(patches_box)
-                ax.text(0.535, app_y - 0.015, f"● {title}", fontsize=7.8, fontweight="bold", color="#92400e", va="center", zorder=3)
-                wrapped_rat = textwrap.fill(desc, width=48)
-                ax.text(0.535, app_y - 0.045, wrapped_rat, fontsize=6.7, color="#334155", va="center", zorder=3)
-                app_y -= 0.095
+                top_y = by + bh
+                ax.text(bx + 0.012, top_y - 0.018, f"● {title}", fontsize=7.8, fontweight="bold", color="#92400e", va="center", zorder=3)
+                clean_desc = textwrap.fill(desc[:165] + ("..." if len(desc) > 165 else ""), width=52)
+                ax.text(bx + 0.012, top_y - 0.045, clean_desc, fontsize=6.6, color="#334155", va="top", linespacing=1.2, zorder=3)
 
     # 5. Footer
     ax.axhline(0.055, color="#cbd5e1", linewidth=0.8, xmin=0.04, xmax=0.96)
