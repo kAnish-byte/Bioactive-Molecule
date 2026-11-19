@@ -931,6 +931,66 @@ function initSinglePrediction() {
     }
   });
 
+  const btnExport = $("btnExportDossier");
+  btnExport?.addEventListener("click", async () => {
+    const ctx = window.currentPredictionContext;
+    if (!ctx || !ctx.smiles) {
+      toast("Please run a prediction first.");
+      return;
+    }
+
+    const origHtml = btnExport.innerHTML;
+    btnExport.disabled = true;
+    btnExport.innerHTML = '<i data-lucide="loader-circle" class="spin"></i><span>Generating PDF Dossier…</span>';
+    if (window.lucide && typeof lucide.createIcons === "function") {
+      lucide.createIcons();
+    }
+
+    try {
+      const res = await fetch(`${API_BASE}/export_dossier`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          molecule_name: ctx.molecule_name,
+          smiles: ctx.smiles,
+          prediction: ctx.prediction,
+          probability: ctx.probability,
+          mol_info: ctx.mol_info,
+          top_substructures: ctx.top_substructures,
+          timestamp: new Date().toLocaleString()
+        })
+      });
+
+      if (!res.ok) {
+        throw new Error(`Server returned ${res.status}`);
+      }
+
+      const blob = await res.blob();
+      const safeName = (ctx.molecule_name || "Compound").replace(/[^a-zA-Z0-9_\-]/g, "_");
+      const filename = `Bioactivity_Dossier_${safeName}.pdf`;
+
+      const blobUrl = window.URL.createObjectURL(blob);
+      const dlLink = document.createElement("a");
+      dlLink.href = blobUrl;
+      dlLink.download = filename;
+      document.body.appendChild(dlLink);
+      dlLink.click();
+      dlLink.remove();
+      window.URL.revokeObjectURL(blobUrl);
+
+      toast("Screening Dossier (PDF) downloaded!");
+    } catch (err) {
+      console.error("Export Dossier Error:", err);
+      toast("Failed to export Dossier. Please try again.");
+    } finally {
+      btnExport.disabled = false;
+      btnExport.innerHTML = origHtml;
+      if (window.lucide && typeof lucide.createIcons === "function") {
+        lucide.createIcons();
+      }
+    }
+  });
+
   const steps = ["Resolving molecule…", "Generating Morgan fingerprint…", "Running XGBoost inference…", "Computing atom attribution…", "Building 3D conformer…"];
 
   btnPredict.addEventListener("click", async () => {
@@ -998,6 +1058,7 @@ function initSinglePrediction() {
         molecule_name: data.molecule_name || value,
         smiles: data.smiles || value,
         prediction: data.prediction,
+        probability: data.probability,
         mol_info: data.mol_info || {},
         top_substructures: data.atom_attribution?.top_substructures || []
       };
