@@ -781,8 +781,8 @@ class VisualizeRequest(BaseModel):
 # ── API Endpoints ─────────────────────────────────────────────────────────────
 @app.get("/")
 def root():
-    """Redirect initial entry point directly to login page."""
-    return RedirectResponse(url="/app/login")
+    """Redirect initial entry point directly to /app/"""
+    return RedirectResponse(url="/app/")
 
 
 @app.get("/health")
@@ -1794,14 +1794,17 @@ def models():
 # ── Static File & Page Serving ────────────────────────────────────────────────
 @app.get("/app/")
 @app.get("/app")
-def serve_home_page():
-    return RedirectResponse(url="/app/login")
+@app.get("/app/login/")
+@app.get("/app/login")
+@app.get("/login")
+def serve_login_and_entry():
+    return FileResponse(os.path.join(FRONTEND_DIR, "index.html"), media_type="text/html")
 
 
 @app.get("/app/home")
-@app.get("/app/index.html")
-def serve_index_page():
-    return FileResponse(os.path.join(FRONTEND_DIR, "index.html"), media_type="text/html")
+@app.get("/app/home.html")
+def serve_platform_overview():
+    return FileResponse(os.path.join(FRONTEND_DIR, "home.html"), media_type="text/html")
 
 
 @app.get("/app/predict/")
@@ -1858,17 +1861,6 @@ def redirect_to_about():
 @app.get("/bioactivity")
 def redirect_to_bioactivity():
     return RedirectResponse(url="/app/bioactivity-guide")
-
-
-@app.get("/app/login/")
-@app.get("/app/login")
-def serve_login_page():
-    return FileResponse(os.path.join(FRONTEND_DIR, "login.html"), media_type="text/html")
-
-
-@app.get("/login")
-def redirect_to_login():
-    return RedirectResponse(url="/app/login")
 
 
 @app.get("/style.css")
