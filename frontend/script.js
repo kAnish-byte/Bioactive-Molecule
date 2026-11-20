@@ -36,6 +36,7 @@ let modelsCache = null;
 function startApp() {
   refreshIcons();
   initNav();
+  initAuthNav();
   initReveal();
   initCountUp();
   initHealthCheck();
@@ -44,6 +45,7 @@ function startApp() {
   initBatchPrediction();
   initBenchmark();
   initLightbox();
+  initChatbot();
 }
 
 if (document.readyState === "loading") document.addEventListener("DOMContentLoaded", startApp);
@@ -211,6 +213,100 @@ function initNav() {
         homeLink.setAttribute("aria-current", "page");
       }
     }
+  }
+}
+
+/* ─── Authentication state & Navbar User Chip ──────────────── */
+function initAuthNav() {
+  const navRight = document.querySelector(".nav-right");
+  if (!navRight) return;
+
+  // Look for existing slot or create one
+  let slot = $("navAuthSlot");
+  if (!slot) {
+    slot = document.createElement("div");
+    slot.id = "navAuthSlot";
+    slot.className = "nav-auth-slot";
+    const toggle = $("navToggle");
+    if (toggle) navRight.insertBefore(slot, toggle);
+    else navRight.appendChild(slot);
+  }
+
+  const token = localStorage.getItem("biopredict_token");
+  let user = null;
+  try {
+    const raw = localStorage.getItem("biopredict_user");
+    if (raw) user = JSON.parse(raw);
+  } catch {
+    user = null;
+  }
+
+  if (token && user) {
+    const initial = (user.username || "U").charAt(0).toUpperCase();
+    slot.innerHTML = `
+      <div class="user-chip-wrap" id="userChipWrap">
+        <button type="button" class="user-chip" id="userChipBtn" aria-expanded="false" title="Account: ${user.username}">
+          <span class="user-avatar-circle">${initial}</span>
+          <span class="user-chip-name">${user.username}</span>
+          <i data-lucide="chevron-down"></i>
+        </button>
+        <div class="user-dropdown" id="userDropdown" hidden>
+          <div class="user-drop-head">
+            <strong>${user.username}</strong>
+            <span class="user-drop-email">${user.email || 'Researcher'}</span>
+          </div>
+          <div class="user-drop-divider"></div>
+          <a href="/app/predict" class="user-drop-item"><i data-lucide="flask-conical"></i> Screening Workspace</a>
+          <button type="button" class="user-drop-item" id="btnLogout"><i data-lucide="log-out"></i> Sign Out</button>
+        </div>
+      </div>
+    `;
+
+    const wrap = $("userChipWrap");
+    const btn = $("userChipBtn");
+    const dropdown = $("userDropdown");
+    const btnLogout = $("btnLogout");
+
+    btn?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const isOpen = !dropdown.hidden;
+      dropdown.hidden = isOpen;
+      wrap?.classList.toggle("open", !isOpen);
+      btn.setAttribute("aria-expanded", String(!isOpen));
+    });
+
+    document.addEventListener("click", (e) => {
+      if (dropdown && !dropdown.hidden && wrap && !wrap.contains(e.target)) {
+        dropdown.hidden = true;
+        wrap?.classList.remove("open");
+        btn?.setAttribute("aria-expanded", "false");
+      }
+    });
+
+    btnLogout?.addEventListener("click", () => {
+      localStorage.removeItem("biopredict_token");
+      localStorage.removeItem("biopredict_user");
+      toast("Signed out successfully");
+      setTimeout(() => {
+        window.location.href = "/app/login?force=1";
+      }, 450);
+    });
+  } else {
+    // If not logged in and not on login page, show Sign In button
+    if (!window.location.pathname.includes("login")) {
+      slot.innerHTML = `
+        <a href="/app/login" class="nav-auth-btn" id="navLoginBtn">
+          <i data-lucide="user"></i>
+          <span>Sign In</span>
+        </a>
+      `;
+    } else {
+      slot.innerHTML = "";
+    }
+  }
+
+  if (window.lucide && typeof lucide.createIcons === "function") {
+    lucide.createIcons();
   }
 }
 
@@ -930,6 +1026,68 @@ function initSinglePrediction() {
     }
   });
 
+  const btnExport = $("btnExportDossier");
+  btnExport?.addEventListener("click", async () => {
+    const ctx = window.currentPredictionContext;
+    if (!ctx || !ctx.smiles) {
+      toast("Please run a prediction first.");
+      return;
+    }
+
+    const origHtml = btnExport.innerHTML;
+    btnExport.disabled = true;
+    btnExport.innerHTML = '<i data-lucide="loader-circle" class="spin"></i><span>Generating PDF Dossier…</span>';
+    if (window.lucide && typeof lucide.createIcons === "function") {
+      lucide.createIcons();
+    }
+
+    try {
+      const res = await fetch(`${API_BASE}/export_dossier`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          molecule_name: ctx.molecule_name,
+          smiles: ctx.smiles,
+          prediction: ctx.prediction,
+          probability: ctx.probability,
+          mol_info: ctx.mol_info,
+          top_substructures: ctx.top_substructures,
+          active_suggestions: ctx.active_suggestions,
+          lead_optimization: ctx.lead_optimization,
+          timestamp: new Date().toLocaleString()
+        })
+      });
+
+      if (!res.ok) {
+        throw new Error(`Server returned ${res.status}`);
+      }
+
+      const blob = await res.blob();
+      const safeName = (ctx.molecule_name || "Compound").replace(/[^a-zA-Z0-9_\-]/g, "_");
+      const filename = `Bioactivity_Dossier_${safeName}.pdf`;
+
+      const blobUrl = window.URL.createObjectURL(blob);
+      const dlLink = document.createElement("a");
+      dlLink.href = blobUrl;
+      dlLink.download = filename;
+      document.body.appendChild(dlLink);
+      dlLink.click();
+      dlLink.remove();
+      window.URL.revokeObjectURL(blobUrl);
+
+      toast("Screening Dossier (PDF) downloaded!");
+    } catch (err) {
+      console.error("Export Dossier Error:", err);
+      toast("Failed to export Dossier. Please try again.");
+    } finally {
+      btnExport.disabled = false;
+      btnExport.innerHTML = origHtml;
+      if (window.lucide && typeof lucide.createIcons === "function") {
+        lucide.createIcons();
+      }
+    }
+  });
+
   const steps = ["Resolving molecule…", "Generating Morgan fingerprint…", "Running XGBoost inference…", "Computing atom attribution…", "Building 3D conformer…"];
 
   btnPredict.addEventListener("click", async () => {
@@ -991,6 +1149,40 @@ function initSinglePrediction() {
       renderXAI(currentAttribution);
       renderLeadOptimization(data.lead_optimization, data.prediction);
       renderActiveApplications(data.active_suggestions, data.prediction);
+
+      // Update AI Assistant live context
+      window.currentPredictionContext = {
+        molecule_name: data.molecule_name || value,
+        smiles: data.smiles || value,
+        prediction: data.prediction,
+        probability: data.probability,
+        mol_info: data.mol_info || {},
+        top_substructures: data.atom_attribution?.top_substructures || [],
+        active_suggestions: data.active_suggestions || [],
+        lead_optimization: data.lead_optimization || []
+      };
+      const contextBadge = $("chatMolContextBadge");
+      if (contextBadge) {
+        contextBadge.textContent = `${data.molecule_name || value} · ${data.prediction}`;
+      }
+
+      // Record in user history if authenticated
+      const userToken = localStorage.getItem("biopredict_token");
+      if (userToken) {
+        fetch(`${API_BASE}/api/auth/history`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${userToken}`
+          },
+          body: JSON.stringify({
+            molecule_name: data.molecule_name || value,
+            smiles: data.smiles || value,
+            prediction: data.prediction,
+            probability: data.probability
+          })
+        }).catch(() => {});
+      }
     } catch (err) {
       showError(err.message || "Failed to predict molecule.");
       if (!currentMol3D && $("stageEmpty")) $("stageEmpty").hidden = false;
@@ -1271,4 +1463,122 @@ function escapeHtml(str) {
     .replace(/>/g, "&gt;")
     .replace(/"/g, "&quot;")
     .replace(/'/g, "&#39;");
+}
+
+/* ─── BioPredict Molecular AI Assistant ───────────────────── */
+function initChatbot() {
+  const fab = $("chatFab");
+  const drawer = $("chatDrawer");
+  const btnClose = $("btnCloseChat");
+  const btnClear = $("btnClearChat");
+  const form = $("chatForm");
+  const input = $("chatInput");
+  const messagesBox = $("chatMessages");
+  if (!fab || !drawer) return;
+
+  const toggleDrawer = (open) => {
+    const isOpening = (typeof open === "boolean") ? open : drawer.hidden;
+    drawer.hidden = !isOpening;
+    drawer.setAttribute("aria-hidden", String(!isOpening));
+    if (isOpening) {
+      if (input) input.focus();
+      scrollChatBottom();
+    }
+  };
+
+  fab.addEventListener("click", () => toggleDrawer());
+  btnClose?.addEventListener("click", () => toggleDrawer(false));
+
+  btnClear?.addEventListener("click", () => {
+    if (!messagesBox) return;
+    messagesBox.innerHTML = `
+      <div class="chat-bubble bot">
+        <p>👋 Conversation cleared. Ask me anything about the analyzed compound, COX-2 active site residues, or lead optimization!</p>
+      </div>`;
+  });
+
+  const scrollChatBottom = () => {
+    if (messagesBox) {
+      messagesBox.scrollTop = messagesBox.scrollHeight;
+    }
+  };
+
+  // Quick Chips
+  document.querySelectorAll(".chat-chip").forEach(chip => {
+    chip.addEventListener("click", () => {
+      const q = chip.dataset.question;
+      if (q && input) {
+        input.value = q;
+        form?.dispatchEvent(new Event("submit", { cancelable: true }));
+      }
+    });
+  });
+
+  function formatAiMarkdown(text) {
+    if (!text) return "";
+    let safe = escapeHtml(text);
+    // Bold: **text**
+    safe = safe.replace(/\*\*(.*?)\*\*/g, "<strong>$1</strong>");
+    // Bullet lists
+    const lines = safe.split("\n");
+    let inList = false;
+    const htmlLines = [];
+    for (const l of lines) {
+      const trimmed = l.trim();
+      if (trimmed.startsWith("* ") || trimmed.startsWith("- ")) {
+        if (!inList) { htmlLines.push("<ul>"); inList = true; }
+        htmlLines.push(`<li>${trimmed.substring(2)}</li>`);
+      } else {
+        if (inList) { htmlLines.push("</ul>"); inList = false; }
+        if (trimmed.length > 0) {
+          htmlLines.push(`<p>${trimmed}</p>`);
+        }
+      }
+    }
+    if (inList) htmlLines.push("</ul>");
+    return htmlLines.join("");
+  }
+
+  form?.addEventListener("submit", async (e) => {
+    e.preventDefault();
+    const text = (input?.value || "").trim();
+    if (!text) return;
+    input.value = "";
+
+    // Append user message
+    const userBubble = document.createElement("div");
+    userBubble.className = "chat-bubble user";
+    userBubble.textContent = text;
+    messagesBox.appendChild(userBubble);
+
+    // Append loading placeholder
+    const loadingBubble = document.createElement("div");
+    loadingBubble.className = "chat-bubble bot loading-bubble";
+    loadingBubble.innerHTML = `<span class="chat-dot"></span><span class="chat-dot"></span><span class="chat-dot"></span><span>Analyzing chemistry…</span>`;
+    messagesBox.appendChild(loadingBubble);
+    scrollChatBottom();
+
+    try {
+      const res = await fetch(`${API_BASE}/api/chat`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          message: text,
+          molecule_context: window.currentPredictionContext || null
+        })
+      });
+      const data = await res.json();
+      if (!res.ok) {
+        throw new Error(data.detail || "Unable to reach molecular AI assistant.");
+      }
+      loadingBubble.className = "chat-bubble bot";
+      loadingBubble.innerHTML = formatAiMarkdown(data.reply);
+    } catch (err) {
+      loadingBubble.className = "chat-bubble bot";
+      loadingBubble.innerHTML = `<p style="color: var(--rose);">⚠️ ${escapeHtml(err.message)}</p>`;
+    } finally {
+      scrollChatBottom();
+      refreshIcons();
+    }
+  });
 }

@@ -17,6 +17,13 @@
     if (!window.lucide) {
       document.write('<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"><\/script>');
     }
+    // Auto-forward to screening workspace if already logged in (unless explicitly forced)
+    try {
+      var _p = new URLSearchParams(window.location.search);
+      if (!_p.get("force") && !_p.get("logout") && localStorage.getItem("biopredict_token")) {
+        window.location.replace("/app/predict");
+      }
+    } catch(e) {}
   </script>
 </head>
 <body class="auth-page">
@@ -74,7 +81,7 @@
             <i data-lucide="zap"></i>
             <span>Demo Login</span>
           </button>
-          <p class="demo-subtext">Instant one-click access as <strong>Demo Researcher</strong> (Medicinal Chemist) &middot; no password required.</p>
+          <p class="demo-subtext">Instant one-click access as <strong>Demo Researcher</strong> &middot; no password required.</p>
         </div>
 
         <div class="auth-divider">
@@ -146,24 +153,19 @@
             </div>
           </div>
 
-          <div class="form-group">
-            <label for="regRole">Research Specialization / Role</label>
-            <div class="select-with-icon">
-              <i data-lucide="briefcase"></i>
-              <select id="regRole">
-                <option value="Medicinal Chemist" selected>Medicinal Chemist</option>
-                <option value="Pharmacology Researcher">Academic Pharmacology Researcher</option>
-                <option value="Bioinformatics Student">Bioinformatics Student / Scholar</option>
-                <option value="Clinical Drug Discovery Lead">Clinical Drug Discovery Lead</option>
-              </select>
-            </div>
-          </div>
-
           <button type="submit" class="btn btn-primary btn-block btn-auth-submit" id="btnSubmitRegister">
             <i data-lucide="user-plus"></i>
             <span>Create Research Account</span>
           </button>
         </form>
+
+        <!-- Guest Bypass Option -->
+        <div class="guest-bypass-box">
+          <a href="/app/predict" class="btn btn-guest-bypass" id="btnGuestBypass">
+            <span>Continue as Guest / Skip Login &rarr;</span>
+          </a>
+          <p class="guest-subtext">Immediate open access to the Virtual Screening workspace &middot; no sign-in required.</p>
+        </div>
 
         <!-- Security Badge Footer -->
         <div class="auth-security-footer">
@@ -306,7 +308,6 @@
         const username = document.getElementById("regUsername")?.value.trim();
         const email = document.getElementById("regEmail")?.value.trim();
         const password = document.getElementById("regPassword")?.value;
-        const role = document.getElementById("regRole")?.value;
         const btn = document.getElementById("btnSubmitRegister");
 
         if (!username || !email || !password) {
@@ -326,7 +327,7 @@
           const res = await fetch("/api/auth/register", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
-            body: JSON.stringify({ username, email, password, role })
+            body: JSON.stringify({ username, email, password })
           });
           const data = await res.json();
           if (!res.ok) throw new Error(data.detail || "Account creation failed.");

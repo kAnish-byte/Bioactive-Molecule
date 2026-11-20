@@ -781,16 +781,16 @@ class VisualizeRequest(BaseModel):
 # ── API Endpoints ─────────────────────────────────────────────────────────────
 @app.get("/")
 def root(request: Request):
-    """API info or redirect to frontend if opened in a browser."""
+    """API info or redirect to login page if opened in a browser."""
     accept = request.headers.get("accept", "")
     if "text/html" in accept:
-        return RedirectResponse(url="/app/")
+        return RedirectResponse(url="/app/login")
     return {
         "api": "BioPredict",
         "version": "2.0.0",
         "model": BEST_MODEL_NAME,
         "docs": "/docs",
-        "app": "/app/"
+        "app": "/app/login"
     }
 
 
@@ -1804,6 +1804,12 @@ def models():
 @app.get("/app/")
 @app.get("/app")
 def serve_home_page():
+    return RedirectResponse(url="/app/login")
+
+
+@app.get("/app/home")
+@app.get("/app/index.html")
+def serve_index_page():
     return FileResponse(os.path.join(FRONTEND_DIR, "index.html"), media_type="text/html")
 
 

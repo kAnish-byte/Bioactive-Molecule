@@ -253,8 +253,7 @@ function initAuthNav() {
         <div class="user-dropdown" id="userDropdown" hidden>
           <div class="user-drop-head">
             <strong>${user.username}</strong>
-            <span>${user.role || 'Medicinal Chemist'}</span>
-            <span class="user-drop-email">${user.email || ''}</span>
+            <span class="user-drop-email">${user.email || 'Researcher'}</span>
           </div>
           <div class="user-drop-divider"></div>
           <a href="/app/predict" class="user-drop-item"><i data-lucide="flask-conical"></i> Screening Workspace</a>
@@ -289,8 +288,8 @@ function initAuthNav() {
       localStorage.removeItem("biopredict_user");
       toast("Signed out successfully");
       setTimeout(() => {
-        initAuthNav();
-      }, 400);
+        window.location.href = "/app/login?force=1";
+      }, 450);
     });
   } else {
     // If not logged in and not on login page, show Sign In button
