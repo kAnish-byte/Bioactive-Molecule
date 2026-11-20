@@ -36,6 +36,7 @@ let modelsCache = null;
 function startApp() {
   refreshIcons();
   initNav();
+  initAuthNav();
   initReveal();
   initCountUp();
   initHealthCheck();
@@ -212,6 +213,101 @@ function initNav() {
         homeLink.setAttribute("aria-current", "page");
       }
     }
+  }
+}
+
+/* ─── Authentication state & Navbar User Chip ──────────────── */
+function initAuthNav() {
+  const navRight = document.querySelector(".nav-right");
+  if (!navRight) return;
+
+  // Look for existing slot or create one
+  let slot = $("navAuthSlot");
+  if (!slot) {
+    slot = document.createElement("div");
+    slot.id = "navAuthSlot";
+    slot.className = "nav-auth-slot";
+    const toggle = $("navToggle");
+    if (toggle) navRight.insertBefore(slot, toggle);
+    else navRight.appendChild(slot);
+  }
+
+  const token = localStorage.getItem("biopredict_token");
+  let user = null;
+  try {
+    const raw = localStorage.getItem("biopredict_user");
+    if (raw) user = JSON.parse(raw);
+  } catch {
+    user = null;
+  }
+
+  if (token && user) {
+    const initial = (user.username || "U").charAt(0).toUpperCase();
+    slot.innerHTML = `
+      <div class="user-chip-wrap" id="userChipWrap">
+        <button type="button" class="user-chip" id="userChipBtn" aria-expanded="false" title="Account: ${user.username}">
+          <span class="user-avatar-circle">${initial}</span>
+          <span class="user-chip-name">${user.username}</span>
+          <i data-lucide="chevron-down"></i>
+        </button>
+        <div class="user-dropdown" id="userDropdown" hidden>
+          <div class="user-drop-head">
+            <strong>${user.username}</strong>
+            <span>${user.role || 'Medicinal Chemist'}</span>
+            <span class="user-drop-email">${user.email || ''}</span>
+          </div>
+          <div class="user-drop-divider"></div>
+          <a href="/app/predict" class="user-drop-item"><i data-lucide="flask-conical"></i> Screening Workspace</a>
+          <button type="button" class="user-drop-item" id="btnLogout"><i data-lucide="log-out"></i> Sign Out</button>
+        </div>
+      </div>
+    `;
+
+    const wrap = $("userChipWrap");
+    const btn = $("userChipBtn");
+    const dropdown = $("userDropdown");
+    const btnLogout = $("btnLogout");
+
+    btn?.addEventListener("click", (e) => {
+      e.stopPropagation();
+      const isOpen = !dropdown.hidden;
+      dropdown.hidden = isOpen;
+      wrap?.classList.toggle("open", !isOpen);
+      btn.setAttribute("aria-expanded", String(!isOpen));
+    });
+
+    document.addEventListener("click", (e) => {
+      if (dropdown && !dropdown.hidden && wrap && !wrap.contains(e.target)) {
+        dropdown.hidden = true;
+        wrap?.classList.remove("open");
+        btn?.setAttribute("aria-expanded", "false");
+      }
+    });
+
+    btnLogout?.addEventListener("click", () => {
+      localStorage.removeItem("biopredict_token");
+      localStorage.removeItem("biopredict_user");
+      toast("Signed out successfully");
+      setTimeout(() => {
+        initAuthNav();
+      }, 400);
+    });
+  } else {
+    // If not logged in and not on login page, show Sign In button
+    if (!window.location.pathname.includes("login")) {
+      slot.innerHTML = `
+        <a href="/app/login" class="nav-auth-btn" id="navLoginBtn">
+          <i data-lucide="user"></i>
+          <span>Sign In</span>
+        </a>
+      `;
+    } else {
+      slot.innerHTML = "";
+    }
+  }
+
+  if (window.lucide && typeof lucide.createIcons === "function") {
+    lucide.createIcons();
   }
 }
 
@@ -1069,6 +1165,24 @@ function initSinglePrediction() {
       const contextBadge = $("chatMolContextBadge");
       if (contextBadge) {
         contextBadge.textContent = `${data.molecule_name || value} · ${data.prediction}`;
+      }
+
+      // Record in user history if authenticated
+      const userToken = localStorage.getItem("biopredict_token");
+      if (userToken) {
+        fetch(`${API_BASE}/api/auth/history`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${userToken}`
+          },
+          body: JSON.stringify({
+            molecule_name: data.molecule_name || value,
+            smiles: data.smiles || value,
+            prediction: data.prediction,
+            probability: data.probability
+          })
+        }).catch(() => {});
       }
     } catch (err) {
       showError(err.message || "Failed to predict molecule.");

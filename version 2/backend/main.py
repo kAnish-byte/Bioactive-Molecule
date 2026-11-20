@@ -1219,6 +1219,318 @@ def export_dossier_get(smiles: str, name: Optional[str] = "Compound", prediction
         raise HTTPException(status_code=500, detail=f"Dossier generation failed: {e}")
 
 
+# ── User Authentication & Screening History Vault (SQLite) ────────────────────
+import sqlite3
+import hashlib
+import hmac
+import secrets
+import time
+
+AUTH_DB_PATH = os.path.join(PROJECT_ROOT, "users.db")
+AUTH_SECRET = os.environ.get("AUTH_SECRET", "biopredict_molecular_vault_secret_2026")
+
+
+def init_auth_db():
+    try:
+        conn = sqlite3.connect(AUTH_DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS users (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            username TEXT UNIQUE NOT NULL,
+            email TEXT UNIQUE NOT NULL,
+            password_hash TEXT NOT NULL,
+            salt TEXT NOT NULL,
+            role TEXT DEFAULT 'Medicinal Chemist',
+            created_at TEXT NOT NULL
+        )
+        """)
+        cursor.execute("""
+        CREATE TABLE IF NOT EXISTS screening_history (
+            id INTEGER PRIMARY KEY AUTOINCREMENT,
+            user_id INTEGER,
+            molecule_name TEXT,
+            smiles TEXT,
+            prediction TEXT,
+            probability REAL,
+            timestamp TEXT,
+            FOREIGN KEY(user_id) REFERENCES users(id)
+        )
+        """)
+        conn.commit()
+
+        # Seed default Demo Researcher user
+        cursor.execute("SELECT id FROM users WHERE email = 'demo@biopredict.org' OR username = 'Demo Researcher'")
+        if not cursor.fetchone():
+            salt = secrets.token_hex(16)
+            hashed = hashlib.pbkdf2_hmac("sha256", "demo123".encode(), salt.encode(), 100000).hex()
+            cursor.execute(
+                "INSERT INTO users (username, email, password_hash, salt, role, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+                ("Demo Researcher", "demo@biopredict.org", hashed, salt, "Medicinal Chemist", datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S"))
+            )
+            conn.commit()
+        conn.close()
+    except Exception as e:
+        print(f"[WARN] Auth DB setup: {e}")
+
+
+init_auth_db()
+
+
+def hash_password(password: str, salt: str = None):
+    if not salt:
+        salt = secrets.token_hex(16)
+    hashed = hashlib.pbkdf2_hmac("sha256", password.encode(), salt.encode(), 100000).hex()
+    return hashed, salt
+
+
+def verify_password(password: str, hashed: str, salt: str) -> bool:
+    new_hash, _ = hash_password(password, salt)
+    return hmac.compare_digest(new_hash, hashed)
+
+
+def create_session_token(user_id: int) -> str:
+    ts = int(time.time())
+    payload = f"{user_id}:{ts}"
+    sig = hmac.new(AUTH_SECRET.encode(), payload.encode(), hashlib.sha256).hexdigest()
+    return f"{payload}:{sig}"
+
+
+def get_current_user_from_token(token_header: Optional[str]) -> Optional[dict]:
+    if not token_header:
+        return None
+    try:
+        token = token_header
+        if token.lower().startswith("bearer "):
+            token = token[7:].strip()
+        parts = token.split(":")
+        if len(parts) != 3:
+            return None
+        uid_str, ts_str, sig = parts
+        payload = f"{uid_str}:{ts_str}"
+        expected = hmac.new(AUTH_SECRET.encode(), payload.encode(), hashlib.sha256).hexdigest()
+        if not hmac.compare_digest(sig, expected):
+            return None
+        # Valid for 30 days
+        if int(time.time()) - int(ts_str) > 30 * 86400:
+            return None
+
+        conn = sqlite3.connect(AUTH_DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, username, email, role FROM users WHERE id = ?", (int(uid_str),))
+        row = cursor.fetchone()
+        conn.close()
+        if row:
+            return {"id": row[0], "username": row[1], "email": row[2], "role": row[3]}
+        return None
+    except Exception:
+        return None
+
+
+class RegisterRequest(BaseModel):
+    username: str
+    email: str
+    password: str
+    role: Optional[str] = "Medicinal Chemist"
+
+
+class LoginRequest(BaseModel):
+    identifier: str
+    password: str
+
+
+class HistoryLogRequest(BaseModel):
+    molecule_name: str
+    smiles: str
+    prediction: str
+    probability: Optional[float] = None
+
+
+@app.post("/api/auth/register")
+def auth_register(req: RegisterRequest):
+    u_name = req.username.strip()
+    u_email = req.email.strip().lower()
+    pw = req.password
+    role = req.role.strip() if req.role else "Medicinal Chemist"
+
+    if len(u_name) < 2:
+        raise HTTPException(status_code=400, detail="Username must be at least 2 characters.")
+    if "@" not in u_email or "." not in u_email:
+        raise HTTPException(status_code=400, detail="Please enter a valid email address.")
+    if len(pw) < 6:
+        raise HTTPException(status_code=400, detail="Password must be at least 6 characters.")
+
+    hashed, salt = hash_password(pw)
+    created_at = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+
+    try:
+        conn = sqlite3.connect(AUTH_DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO users (username, email, password_hash, salt, role, created_at) VALUES (?, ?, ?, ?, ?, ?)",
+            (u_name, u_email, hashed, salt, role, created_at)
+        )
+        user_id = cursor.lastrowid
+        conn.commit()
+        conn.close()
+    except sqlite3.IntegrityError:
+        raise HTTPException(status_code=409, detail="An account with this username or email already exists.")
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Registration error: {e}")
+
+    token = create_session_token(user_id)
+    return {
+        "status": "success",
+        "token": token,
+        "user": {
+            "id": user_id,
+            "username": u_name,
+            "email": u_email,
+            "role": role
+        }
+    }
+
+
+@app.post("/api/auth/login")
+def auth_login(req: LoginRequest):
+    ident = req.identifier.strip()
+    pw = req.password
+    if not ident or not pw:
+        raise HTTPException(status_code=400, detail="Please provide both email/username and password.")
+
+    conn = sqlite3.connect(AUTH_DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute(
+        "SELECT id, username, email, password_hash, salt, role FROM users WHERE LOWER(email) = LOWER(?) OR LOWER(username) = LOWER(?)",
+        (ident, ident)
+    )
+    row = cursor.fetchone()
+    conn.close()
+
+    if not row or not verify_password(pw, row[3], row[4]):
+        raise HTTPException(status_code=401, detail="Invalid username/email or password.")
+
+    user_id = row[0]
+    token = create_session_token(user_id)
+    return {
+        "status": "success",
+        "token": token,
+        "user": {
+            "id": user_id,
+            "username": row[1],
+            "email": row[2],
+            "role": row[5]
+        }
+    }
+
+
+@app.post("/api/auth/demo-login")
+def auth_demo_login():
+    """
+    ⚡ Instant 1-click DEMO Login.
+    Signs the user in as the pre-seeded Demo Researcher.
+    """
+    conn = sqlite3.connect(AUTH_DB_PATH)
+    cursor = conn.cursor()
+    cursor.execute("SELECT id, username, email, role FROM users WHERE email = 'demo@biopredict.org'")
+    row = cursor.fetchone()
+    conn.close()
+
+    if not row:
+        init_auth_db()
+        conn = sqlite3.connect(AUTH_DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute("SELECT id, username, email, role FROM users WHERE email = 'demo@biopredict.org'")
+        row = cursor.fetchone()
+        conn.close()
+
+    user_id = row[0] if row else 1
+    token = create_session_token(user_id)
+    return {
+        "status": "success",
+        "token": token,
+        "user": {
+            "id": user_id,
+            "username": row[1] if row else "Demo Researcher",
+            "email": row[2] if row else "demo@biopredict.org",
+            "role": row[3] if row else "Medicinal Chemist"
+        }
+    }
+
+
+@app.get("/api/auth/me")
+def auth_me(request: Request):
+    auth_header = request.headers.get("Authorization")
+    user = get_current_user_from_token(auth_header)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated or session expired.")
+
+    try:
+        conn = sqlite3.connect(AUTH_DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute("SELECT COUNT(*) FROM screening_history WHERE user_id = ?", (user["id"],))
+        count = cursor.fetchone()[0]
+        conn.close()
+    except Exception:
+        count = 0
+
+    user["screening_count"] = count
+    return {"status": "success", "user": user}
+
+
+@app.get("/api/auth/history")
+def auth_get_history(request: Request):
+    auth_header = request.headers.get("Authorization")
+    user = get_current_user_from_token(auth_header)
+    if not user:
+        raise HTTPException(status_code=401, detail="Not authenticated.")
+
+    try:
+        conn = sqlite3.connect(AUTH_DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute(
+            "SELECT molecule_name, smiles, prediction, probability, timestamp FROM screening_history WHERE user_id = ? ORDER BY id DESC LIMIT 20",
+            (user["id"],)
+        )
+        rows = cursor.fetchall()
+        conn.close()
+        history = [
+            {
+                "molecule_name": r[0],
+                "smiles": r[1],
+                "prediction": r[2],
+                "probability": r[3],
+                "timestamp": r[4]
+            }
+            for r in rows
+        ]
+        return {"status": "success", "history": history}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Database error: {e}")
+
+
+@app.post("/api/auth/history")
+def auth_add_history(item: HistoryLogRequest, request: Request):
+    auth_header = request.headers.get("Authorization")
+    user = get_current_user_from_token(auth_header)
+    if not user:
+        return {"status": "skipped", "message": "Guest prediction (not logged in)"}
+
+    try:
+        ts = datetime.datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+        conn = sqlite3.connect(AUTH_DB_PATH)
+        cursor = conn.cursor()
+        cursor.execute(
+            "INSERT INTO screening_history (user_id, molecule_name, smiles, prediction, probability, timestamp) VALUES (?, ?, ?, ?, ?, ?)",
+            (user["id"], item.molecule_name, item.smiles, item.prediction, item.probability, ts)
+        )
+        conn.commit()
+        conn.close()
+        return {"status": "success", "logged": True}
+    except Exception as e:
+        return {"status": "error", "message": str(e)}
+
+
 # ── AI Molecular Chatbot Endpoint ─────────────────────────────────────────────
 class ChatMessage(BaseModel):
     role: str
@@ -1551,6 +1863,17 @@ def redirect_to_bioactivity():
     return RedirectResponse(url="/app/bioactivity-guide")
 
 
+@app.get("/app/login/")
+@app.get("/app/login")
+def serve_login_page():
+    return FileResponse(os.path.join(FRONTEND_DIR, "login.html"), media_type="text/html")
+
+
+@app.get("/login")
+def redirect_to_login():
+    return RedirectResponse(url="/app/login")
+
+
 @app.get("/style.css")
 @app.get("/app/style.css")
 def serve_css():
@@ -1585,6 +1908,15 @@ def get_study_guide():
         if os.path.exists(fpath):
             return FileResponse(fpath, media_type="application/pdf", filename=fname)
     raise HTTPException(status_code=404, detail="Study guide PDF not found.")
+
+
+@app.get("/features-guide")
+@app.get("/guide")
+def get_features_guide():
+    fpath = os.path.join(FRONTEND_DIR, "assets", "BioPredict_New_Features_Guide.pdf")
+    if os.path.exists(fpath):
+        return FileResponse(fpath, media_type="application/pdf", filename="BioPredict_New_Features_Guide.pdf")
+    raise HTTPException(status_code=404, detail="Features guide PDF not found.")
 
 
 @app.get("/presentation")

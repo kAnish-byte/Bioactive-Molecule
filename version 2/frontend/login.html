@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sign In &middot; BioPredict Drug Discovery Platform</title>
+  <meta name="description" content="Sign in or register for BioPredict Molecular Virtual Screening Platform. Access personal screening history and lead dossiers.">
+  <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14' fill='%230f766e'/><circle cx='16' cy='16' r='6' fill='%235eead4'/></svg>">
+
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="/app/style.css">
+
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+  <script>
+    if (!window.lucide) {
+      document.write('<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"><\/script>');
+    }
+  </script>
+</head>
+<body class="auth-page">
+  <!-- Ambient background: soft gradient mesh -->
+  <div class="ambient" aria-hidden="true">
+    <div class="grid-fade"></div>
+  </div>
+
+  <!-- Minimal Nav Bar -->
+  <header class="navbar auth-nav" id="navbar">
+    <div class="container nav-inner">
+      <a href="/app/" class="brand" aria-label="BioPredict home">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 32 32" width="22" height="22" fill="none">
+            <line x1="16" y1="16" x2="7" y2="8" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity=".55"/>
+            <line x1="16" y1="16" x2="25" y2="8" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity=".55"/>
+            <line x1="16" y1="16" x2="16" y2="27" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity=".55"/>
+            <circle cx="16" cy="16" r="5" fill="currentColor"/>
+            <circle cx="7" cy="8" r="3" fill="currentColor" opacity=".8"/>
+            <circle cx="25" cy="8" r="3" fill="currentColor" opacity=".8"/>
+            <circle cx="16" cy="27" r="3" fill="currentColor" opacity=".8"/>
+          </svg>
+        </span>
+        <span class="brand-text">
+          <span class="brand-title">BioPredict</span>
+          <span class="brand-tag">Virtual Screening</span>
+        </span>
+      </a>
+
+      <div class="nav-right">
+        <a href="/app/predict" class="btn btn-soft btn-sm">
+          <i data-lucide="arrow-left"></i>
+          <span>Screening Workspace</span>
+        </a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Auth Main Container -->
+  <main class="auth-main">
+    <div class="container auth-container">
+      <div class="card auth-card reveal">
+        <!-- Brand Header -->
+        <div class="auth-header">
+          <div class="auth-icon-circle">
+            <i data-lucide="lock-keyhole"></i>
+          </div>
+          <h1 class="auth-title">Research Workspace Sign In</h1>
+          <p class="auth-sub">Access your personal COX-2 screening history, molecular dossiers, and lead optimization workspace.</p>
+        </div>
+
+        <!-- ⚡ DEMO LOGIN BUTTON (Requested specifically by user) -->
+        <div class="demo-login-box">
+          <button type="button" class="btn btn-demo-login" id="btnDemoLogin">
+            <i data-lucide="zap"></i>
+            <span>Demo Login</span>
+          </button>
+          <p class="demo-subtext">Instant one-click access as <strong>Demo Researcher</strong> (Medicinal Chemist) &middot; no password required.</p>
+        </div>
+
+        <div class="auth-divider">
+          <span>or sign in with your research account</span>
+        </div>
+
+        <!-- Tab Switcher -->
+        <div class="auth-tabs" role="tablist">
+          <button type="button" class="auth-tab-btn active" id="tabSignIn" role="tab" aria-selected="true">Sign In</button>
+          <button type="button" class="auth-tab-btn" id="tabSignUp" role="tab" aria-selected="false">Create Account</button>
+        </div>
+
+        <!-- Notification / Error Box -->
+        <div class="auth-alert" id="authAlert" hidden role="alert"></div>
+
+        <!-- ═════════ Sign In Form ═════════ -->
+        <form id="formSignIn" class="auth-form" novalidate>
+          <div class="form-group">
+            <label for="loginIdentifier">Email or Username</label>
+            <div class="input-with-icon">
+              <i data-lucide="mail"></i>
+              <input type="text" id="loginIdentifier" placeholder="name@institution.edu or username" required autocomplete="username">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="loginPassword">Password</label>
+            <div class="input-with-icon">
+              <i data-lucide="key-round"></i>
+              <input type="password" id="loginPassword" placeholder="Enter your password" required autocomplete="current-password">
+              <button type="button" class="btn-toggle-pw" id="btnToggleLoginPw" aria-label="Toggle password visibility">
+                <i data-lucide="eye" id="eyeIconLogin"></i>
+              </button>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-block btn-auth-submit" id="btnSubmitLogin">
+            <i data-lucide="log-in"></i>
+            <span>Sign In to BioPredict</span>
+          </button>
+        </form>
+
+        <!-- ═════════ Create Account Form ═════════ -->
+        <form id="formSignUp" class="auth-form" hidden novalidate>
+          <div class="form-group">
+            <label for="regUsername">Full Name or Username</label>
+            <div class="input-with-icon">
+              <i data-lucide="user"></i>
+              <input type="text" id="regUsername" placeholder="e.g. Dr. Jane Doe" required autocomplete="name">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="regEmail">Academic / Research Email</label>
+            <div class="input-with-icon">
+              <i data-lucide="mail"></i>
+              <input type="email" id="regEmail" placeholder="jane.doe@university.edu" required autocomplete="email">
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="regPassword">Password (minimum 6 characters)</label>
+            <div class="input-with-icon">
+              <i data-lucide="key-round"></i>
+              <input type="password" id="regPassword" placeholder="Create a secure password" required minlength="6" autocomplete="new-password">
+              <button type="button" class="btn-toggle-pw" id="btnToggleRegPw" aria-label="Toggle password visibility">
+                <i data-lucide="eye" id="eyeIconReg"></i>
+              </button>
+            </div>
+          </div>
+
+          <div class="form-group">
+            <label for="regRole">Research Specialization / Role</label>
+            <div class="select-with-icon">
+              <i data-lucide="briefcase"></i>
+              <select id="regRole">
+                <option value="Medicinal Chemist" selected>Medicinal Chemist</option>
+                <option value="Pharmacology Researcher">Academic Pharmacology Researcher</option>
+                <option value="Bioinformatics Student">Bioinformatics Student / Scholar</option>
+                <option value="Clinical Drug Discovery Lead">Clinical Drug Discovery Lead</option>
+              </select>
+            </div>
+          </div>
+
+          <button type="submit" class="btn btn-primary btn-block btn-auth-submit" id="btnSubmitRegister">
+            <i data-lucide="user-plus"></i>
+            <span>Create Research Account</span>
+          </button>
+        </form>
+
+        <!-- Security Badge Footer -->
+        <div class="auth-security-footer">
+          <i data-lucide="shield-check"></i>
+          <span>Local SQLite Vault &middot; 256-Bit Salted Hashing &middot; Zero Plaintext Storage</span>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="/app/script.js"></script>
+  <script>
+    // Standalone Auth Page Controller
+    (function() {
+      const tabSignIn = document.getElementById("tabSignIn");
+      const tabSignUp = document.getElementById("tabSignUp");
+      const formSignIn = document.getElementById("formSignIn");
+      const formSignUp = document.getElementById("formSignUp");
+      const authAlert = document.getElementById("authAlert");
+      const btnDemoLogin = document.getElementById("btnDemoLogin");
+
+      function showAlert(msg, isSuccess = false) {
+        if (!authAlert) return;
+        authAlert.hidden = false;
+        authAlert.className = `auth-alert ${isSuccess ? "auth-alert-success" : "auth-alert-error"}`;
+        authAlert.innerHTML = `<i data-lucide="${isSuccess ? 'check-circle-2' : 'alert-circle'}"></i><span>${msg}</span>`;
+        if (window.lucide) lucide.createIcons();
+      }
+
+      function hideAlert() {
+        if (!authAlert) return;
+        authAlert.hidden = true;
+      }
+
+      // Tab Switching
+      tabSignIn?.addEventListener("click", () => {
+        tabSignIn.classList.add("active");
+        tabSignUp.classList.remove("active");
+        formSignIn.hidden = false;
+        formSignUp.hidden = true;
+        hideAlert();
+      });
+
+      tabSignUp?.addEventListener("click", () => {
+        tabSignUp.classList.add("active");
+        tabSignIn.classList.remove("active");
+        formSignUp.hidden = false;
+        formSignIn.hidden = true;
+        hideAlert();
+      });
+
+      // Password visibility toggles
+      function setupPwToggle(btnId, inputId, eyeId) {
+        const btn = document.getElementById(btnId);
+        const input = document.getElementById(inputId);
+        const eye = document.getElementById(eyeId);
+        if (!btn || !input) return;
+        btn.addEventListener("click", () => {
+          const isPw = input.type === "password";
+          input.type = isPw ? "text" : "password";
+          if (eye) eye.setAttribute("data-lucide", isPw ? "eye-off" : "eye");
+          if (window.lucide) lucide.createIcons();
+        });
+      }
+      setupPwToggle("btnToggleLoginPw", "loginPassword", "eyeIconLogin");
+      setupPwToggle("btnToggleRegPw", "regPassword", "eyeIconReg");
+
+      // Handle successful authentication
+      function completeAuth(token, user) {
+        localStorage.setItem("biopredict_token", token);
+        localStorage.setItem("biopredict_user", JSON.stringify(user));
+        showAlert(`Welcome, ${user.username}! Redirecting to screening workspace…`, true);
+        setTimeout(() => {
+          // Redirect to predict or previous page
+          const urlParams = new URLSearchParams(window.location.search);
+          const next = urlParams.get("next") || "/app/predict";
+          window.location.href = next;
+        }, 800);
+      }
+
+      // 1. DEMO LOGIN
+      btnDemoLogin?.addEventListener("click", async () => {
+        hideAlert();
+        btnDemoLogin.disabled = true;
+        const origText = btnDemoLogin.innerHTML;
+        btnDemoLogin.innerHTML = '<i data-lucide="loader-circle" class="spin"></i><span>Signing In…</span>';
+        if (window.lucide) lucide.createIcons();
+
+        try {
+          const res = await fetch("/api/auth/demo-login", { method: "POST" });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.detail || "Demo login failed");
+          completeAuth(data.token, data.user);
+        } catch (err) {
+          showAlert(err.message || "Failed to initiate demo login.");
+          btnDemoLogin.disabled = false;
+          btnDemoLogin.innerHTML = origText;
+          if (window.lucide) lucide.createIcons();
+        }
+      });
+
+      // 2. SIGN IN FORM
+      formSignIn?.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        hideAlert();
+        const identifier = document.getElementById("loginIdentifier")?.value.trim();
+        const password = document.getElementById("loginPassword")?.value;
+        const btn = document.getElementById("btnSubmitLogin");
+
+        if (!identifier || !password) {
+          showAlert("Please enter both email/username and password.");
+          return;
+        }
+
+        btn.disabled = true;
+        btn.innerHTML = '<i data-lucide="loader-circle" class="spin"></i><span>Authenticating…</span>';
+        if (window.lucide) lucide.createIcons();
+
+        try {
+          const res = await fetch("/api/auth/login", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ identifier, password })
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.detail || "Invalid credentials.");
+          completeAuth(data.token, data.user);
+        } catch (err) {
+          showAlert(err.message || "Sign in failed. Please check your credentials.");
+          btn.disabled = false;
+          btn.innerHTML = '<i data-lucide="log-in"></i><span>Sign In to BioPredict</span>';
+          if (window.lucide) lucide.createIcons();
+        }
+      });
+
+      // 3. CREATE ACCOUNT FORM
+      formSignUp?.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        hideAlert();
+        const username = document.getElementById("regUsername")?.value.trim();
+        const email = document.getElementById("regEmail")?.value.trim();
+        const password = document.getElementById("regPassword")?.value;
+        const role = document.getElementById("regRole")?.value;
+        const btn = document.getElementById("btnSubmitRegister");
+
+        if (!username || !email || !password) {
+          showAlert("Please fill out all required fields.");
+          return;
+        }
+        if (password.length < 6) {
+          showAlert("Password must be at least 6 characters long.");
+          return;
+        }
+
+        btn.disabled = true;
+        btn.innerHTML = '<i data-lucide="loader-circle" class="spin"></i><span>Creating Account…</span>';
+        if (window.lucide) lucide.createIcons();
+
+        try {
+          const res = await fetch("/api/auth/register", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify({ username, email, password, role })
+          });
+          const data = await res.json();
+          if (!res.ok) throw new Error(data.detail || "Account creation failed.");
+          completeAuth(data.token, data.user);
+        } catch (err) {
+          showAlert(err.message || "Failed to create account.");
+          btn.disabled = false;
+          btn.innerHTML = '<i data-lucide="user-plus"></i><span>Create Research Account</span>';
+          if (window.lucide) lucide.createIcons();
+        }
+      });
+    })();
+  </script>
+</body>
+</html>
