@@ -1,0 +1,217 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <meta name="description" content="BioPredict Batch Screening — High-throughput virtual screening of compound libraries in CSV format against COX-2." />
+  <meta name="theme-color" content="#f4f8f7" />
+  <title>Batch Screening — BioPredict</title>
+
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
+  <link rel="stylesheet" href="/app/style.css" />
+
+  <script>
+    // Enforce Login: Require authentication before accessing the screening workspace
+    if (!localStorage.getItem("biopredict_token")) {
+      window.location.replace("/app/login?next=" + encodeURIComponent(window.location.pathname + window.location.search));
+    }
+  </script>
+
+  <!-- Lucide icons -->
+  <script src="https://cdn.jsdelivr.net/npm/lucide@0.460.0/dist/umd/lucide.min.js"></script>
+  <script>
+    if (!window.lucide) {
+      document.write('<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"><\/script>');
+    }
+  </script>
+</head>
+<body>
+  <a class="skip-link" href="#batch">Skip to batch screening</a>
+
+  <!-- Ambient background: soft gradient mesh -->
+  <div class="ambient" aria-hidden="true">
+    <div class="grid-fade"></div>
+  </div>
+
+  <!-- ═══════════════ Navigation ═══════════════ -->
+  <header class="navbar" id="navbar">
+    <div class="container nav-inner">
+      <a href="/app/" class="brand" aria-label="BioPredict home">
+        <span class="brand-mark" aria-hidden="true">
+          <svg viewBox="0 0 32 32" width="22" height="22" fill="none">
+            <line x1="16" y1="16" x2="7" y2="8" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity=".55"/>
+            <line x1="16" y1="16" x2="25" y2="8" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity=".55"/>
+            <line x1="16" y1="16" x2="16" y2="27" stroke="currentColor" stroke-width="2" stroke-linecap="round" opacity=".55"/>
+            <circle cx="16" cy="16" r="5" fill="currentColor"/>
+            <circle cx="7" cy="8" r="3" fill="currentColor" opacity=".8"/>
+            <circle cx="25" cy="8" r="3" fill="currentColor" opacity=".8"/>
+            <circle cx="16" cy="27" r="3" fill="currentColor" opacity=".8"/>
+          </svg>
+        </span>
+        <span class="brand-text">
+          <span class="brand-title">BioPredict</span>
+          <span class="brand-tag">Drug Discovery AI</span>
+        </span>
+      </a>
+
+      <nav class="nav-links" id="navLinks" aria-label="Primary">
+        <a href="/app/home" data-page="home">Home</a>
+        <a href="/app/predict" data-page="predict">Prediction</a>
+        <a href="/app/batch" data-page="batch" class="active" aria-current="page">Batch Screening</a>
+        <a href="/app/benchmark" data-page="benchmark">Benchmark</a>
+        <a href="/app/bioactivity-guide" data-page="bioactivity">Bioactivity Guide</a>
+        <a href="/app/about" data-page="about">About</a>
+      </nav>
+
+      <div class="nav-right">
+        <div class="status-pill" id="serverStatus" title="FastAPI backend status" role="status" aria-live="polite">
+          <span class="status-dot" id="statusDot"></span>
+          <span class="status-text" id="statusText">Checking…</span>
+        </div>
+        <button class="nav-toggle" id="navToggle" aria-label="Open menu" aria-expanded="false" aria-controls="navLinks">
+          <i data-lucide="menu"></i>
+        </button>
+      </div>
+    </div>
+    <div class="scroll-progress" id="scrollProgress" aria-hidden="true"></div>
+  </header>
+
+  <main>
+    <!-- ═══════════════ Batch ═══════════════ -->
+    <section class="section" id="batch">
+      <div class="container">
+        <header class="section-head reveal">
+          <span class="section-tag"><i data-lucide="layers"></i> High-throughput</span>
+          <h2>Batch virtual screening</h2>
+          <p>Upload a CSV with a <code>smiles</code> column to classify an entire compound library in one pass.</p>
+        </header>
+
+        <div class="batch-grid">
+          <div class="card upload-card reveal">
+            <div class="dropzone" id="dropZone" tabindex="0" role="button" aria-label="Upload CSV file">
+              <div class="drop-icon"><i data-lucide="upload-cloud"></i></div>
+              <strong>Drop your CSV here</strong>
+              <p>or <button type="button" class="link-btn" id="btnBrowse">browse files</button></p>
+              <span class="drop-hint">.csv &middot; one SMILES per row &middot; max <strong>2,000 rows</strong></span>
+              <input type="file" id="batchFileInput" accept=".csv" hidden />
+            </div>
+
+            <div class="file-info" id="fileInfo" hidden>
+              <span class="file-icon"><i data-lucide="file-text"></i></span>
+              <span class="file-name" id="fileName"></span>
+              <button class="icon-btn" id="btnRemoveFile" aria-label="Remove file"><i data-lucide="x"></i></button>
+            </div>
+
+            <p class="error-msg" id="batchError" role="alert"></p>
+
+            <button class="btn btn-primary btn-block" id="btnRunBatch" disabled>
+              <i data-lucide="play"></i> <span>Start batch prediction</span>
+            </button>
+            <div class="progress" id="batchProgress" hidden><span></span></div>
+            <p class="upload-note"><i data-lucide="info"></i> Columns named <code>smiles</code> or <code>SMILES</code> are detected automatically.</p>
+          </div>
+
+          <div class="card summary-card reveal" style="--delay: 100ms">
+            <div class="donut-wrap">
+              <div class="donut" id="donut" style="--active: 0; --inactive: 0;">
+                <div class="donut-center">
+                  <strong id="statTotal">0</strong>
+                  <span>molecules</span>
+                </div>
+              </div>
+            </div>
+            <div class="stat-grid">
+              <div class="stat stat-active"><span class="stat-dot"></span><div><strong id="statActive">0</strong><span>Active</span></div></div>
+              <div class="stat stat-inactive"><span class="stat-dot"></span><div><strong id="statInactive">0</strong><span>Inactive</span></div></div>
+              <div class="stat stat-error"><span class="stat-dot"></span><div><strong id="statErrors">0</strong><span>Invalid</span></div></div>
+              <div class="stat stat-rate"><span class="stat-dot"></span><div><strong id="statHitRate">0%</strong><span>Hit rate</span></div></div>
+            </div>
+          </div>
+        </div>
+
+        <div class="card results-card" id="batchResults" hidden>
+          <div class="results-head">
+            <div class="filters" role="group" aria-label="Filter results" id="batchFilters">
+              <button class="seg-btn active" data-filter="all">All</button>
+              <button class="seg-btn" data-filter="Active">Active</button>
+              <button class="seg-btn" data-filter="Inactive">Inactive</button>
+              <button class="seg-btn" data-filter="error">Errors</button>
+            </div>
+            <div class="results-actions">
+              <label class="search">
+                <i data-lucide="search"></i>
+                <span class="sr-only">Search SMILES</span>
+                <input type="search" id="batchSearch" placeholder="Search SMILES…" />
+              </label>
+              <button class="btn btn-soft btn-sm" id="btnDownload"><i data-lucide="download"></i> Export CSV</button>
+            </div>
+          </div>
+          <div class="table-wrap">
+            <table class="data-table">
+              <thead>
+                <tr><th>#</th><th>SMILES</th><th>Status</th><th>Bioactivity Verdict</th></tr>
+              </thead>
+              <tbody id="batchTableBody"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- Instructions & CSV Format Card -->
+        <div class="card reveal" style="margin-top: 32px; padding: 28px;">
+          <div class="card-head compact">
+            <span class="card-icon"><i data-lucide="help-circle"></i></span>
+            <div>
+              <h3 class="card-title">CSV Formatting Guidelines</h3>
+              <p class="card-sub">Best practices for seamless high-throughput screening</p>
+            </div>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(280px, 1fr)); gap: 20px; margin-top: 16px;">
+            <div>
+              <strong style="font-size: .92rem; color: var(--ink);">Column Headers</strong>
+              <p style="font-size: .88rem; color: var(--ink-2); margin: 6px 0 0;">
+                The file must include a column titled <code>smiles</code> or <code>SMILES</code>. Additional columns (like <code>molecule_name</code> or <code>id</code>) are safely preserved.
+              </p>
+            </div>
+            <div>
+              <strong style="font-size: .92rem; color: var(--ink);">Batch Limit &amp; Speed</strong>
+              <p style="font-size: .88rem; color: var(--ink-2); margin: 6px 0 0;">
+                Up to 2,000 compounds can be processed in a single run. Larger files are automatically capped at row 2,000 to ensure fast web response times.
+              </p>
+            </div>
+            <div>
+              <strong style="font-size: .92rem; color: var(--ink);">Error Resilience</strong>
+              <p style="font-size: .88rem; color: var(--ink-2); margin: 6px 0 0;">
+                Invalid SMILES syntax will be flagged as <code>Invalid</code> in the results table without aborting the entire screening batch.
+              </p>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+  </main>
+
+  <footer class="footer">
+    <div class="container footer-inner">
+      <div class="brand small">
+        <span class="brand-mark" aria-hidden="true"><i data-lucide="atom"></i></span>
+        <span class="brand-title">BioPredict</span>
+      </div>
+      <p>COX-2 bioactivity prediction for research and education. Not for clinical use.</p>
+      <nav class="footer-links" aria-label="Resources">
+        <a href="/app/home">Home</a>
+        <a href="/app/predict">Prediction</a>
+        <a href="/app/batch">Batch Screening</a>
+        <a href="/app/benchmark">Benchmark</a>
+        <a href="/app/bioactivity-guide">Bioactivity Guide</a>
+        <a href="/app/about">About</a>
+      </nav>
+    </div>
+  </footer>
+
+  <div class="toast" id="toast" role="status" aria-live="polite"></div>
+
+  <script src="/app/script.js"></script>
+</body>
+</html>

@@ -12,6 +12,13 @@
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/app/style.css" />
 
+  <script>
+    // Enforce Login: Require authentication before accessing the screening workspace
+    if (!localStorage.getItem("biopredict_token")) {
+      window.location.replace("/app/login?next=" + encodeURIComponent(window.location.pathname + window.location.search));
+    }
+  </script>
+
   <!-- 3Dmol.js: WebGL molecular visualization -->
   <script src="https://cdn.jsdelivr.net/npm/3dmol@2.4.2/build/3Dmol-min.js"></script>
   <script>
