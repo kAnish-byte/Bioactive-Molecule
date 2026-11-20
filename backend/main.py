@@ -780,18 +780,9 @@ class VisualizeRequest(BaseModel):
 
 # ── API Endpoints ─────────────────────────────────────────────────────────────
 @app.get("/")
-def root(request: Request):
-    """API info or redirect to login page if opened in a browser."""
-    accept = request.headers.get("accept", "")
-    if "text/html" in accept:
-        return RedirectResponse(url="/app/login")
-    return {
-        "api": "BioPredict",
-        "version": "2.0.0",
-        "model": BEST_MODEL_NAME,
-        "docs": "/docs",
-        "app": "/app/login"
-    }
+def root():
+    """Redirect initial entry point directly to login page."""
+    return RedirectResponse(url="/app/login")
 
 
 @app.get("/health")

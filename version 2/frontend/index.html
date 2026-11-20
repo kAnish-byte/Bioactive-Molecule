@@ -12,6 +12,13 @@
   <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet" />
   <link rel="stylesheet" href="/app/style.css" />
 
+  <script>
+    // Enforce Login: Require authentication before accessing the platform
+    if (!localStorage.getItem("biopredict_token")) {
+      window.location.replace("/app/login");
+    }
+  </script>
+
   <!-- Lucide icons -->
   <script src="https://cdn.jsdelivr.net/npm/lucide@0.460.0/dist/umd/lucide.min.js"></script>
   <script>

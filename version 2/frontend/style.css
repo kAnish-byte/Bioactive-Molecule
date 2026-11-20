@@ -1501,45 +1501,6 @@ kbd { background: #fff; border: 1px solid var(--line-2); border-bottom-width: 2p
   transform: translateY(-1px);
 }
 
-/* Guest Bypass Box */
-.guest-bypass-box {
-  margin-top: 1.35rem;
-  padding-top: 1.25rem;
-  border-top: 1px dashed var(--line);
-  text-align: center;
-}
-
-.btn-guest-bypass {
-  display: inline-flex;
-  align-items: center;
-  justify-content: center;
-  gap: 0.5rem;
-  width: 100%;
-  padding: 0.72rem 1.25rem;
-  border-radius: 8px;
-  font-size: 0.88rem;
-  font-weight: 600;
-  color: var(--ink-2);
-  background: var(--surface-2);
-  border: 1px solid var(--line);
-  text-decoration: none;
-  transition: all 0.2s ease;
-}
-
-.btn-guest-bypass:hover {
-  background: var(--primary-50);
-  border-color: var(--primary-100);
-  color: var(--primary-600);
-  transform: translateY(-1px);
-}
-
-.guest-subtext {
-  font-size: 0.75rem;
-  color: var(--muted);
-  margin-top: 0.45rem;
-  line-height: 1.35;
-}
-
 /* Alerts */
 .auth-alert {
   padding: 0.75rem 1rem;
