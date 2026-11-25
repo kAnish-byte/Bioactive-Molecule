@@ -80,6 +80,8 @@ except Exception:
     pass
 
 GEMINI_API_KEY = os.environ.get("GEMINI_API_KEY", "").strip()
+SUPABASE_URL = os.environ.get("SUPABASE_URL", "").strip()
+SUPABASE_ANON_KEY = os.environ.get("SUPABASE_ANON_KEY", "").strip()
 
 MODEL_DIR = os.path.join(CURRENT_DIR, "model")
 MODEL_PATH = os.path.join(MODEL_DIR, "best_model.pkl")
@@ -1449,6 +1451,18 @@ def auth_demo_login():
     }
 
 
+@app.get("/api/auth/config")
+def auth_config():
+    """Return public client-side Supabase configuration if configured via environment variables."""
+    supa_url = os.environ.get("SUPABASE_URL", SUPABASE_URL).strip()
+    supa_key = os.environ.get("SUPABASE_ANON_KEY", SUPABASE_ANON_KEY).strip()
+    return {
+        "supabase_enabled": bool(supa_url and supa_key),
+        "supabase_url": supa_url,
+        "supabase_anon_key": supa_key
+    }
+
+
 @app.get("/api/auth/me")
 def auth_me(request: Request):
     auth_header = request.headers.get("Authorization")
@@ -1805,6 +1819,13 @@ def serve_login_and_entry():
 @app.get("/app/home.html")
 def serve_platform_overview():
     return FileResponse(os.path.join(FRONTEND_DIR, "home.html"), media_type="text/html")
+
+
+@app.get("/app/reset-password/")
+@app.get("/app/reset-password")
+@app.get("/reset-password")
+def serve_reset_password_page():
+    return FileResponse(os.path.join(FRONTEND_DIR, "reset-password.html"), media_type="text/html")
 
 
 @app.get("/app/predict/")

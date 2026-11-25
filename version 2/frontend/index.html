@@ -3,13 +3,13 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Sign In &middot; BioPredict Drug Discovery Platform</title>
-  <meta name="description" content="Sign in or register for BioPredict Molecular Virtual Screening Platform. Access personal screening history and lead dossiers.">
+  <title>BioPredict &middot; AI Molecular Virtual Screening Platform</title>
+  <meta name="description" content="BioPredict AI-powered virtual screening platform for COX-2 bioactivity prediction, 3D conformation viewing, and explainable atom attribution. Sign in to access the workspace.">
   <link rel="icon" type="image/svg+xml" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 32 32'><circle cx='16' cy='16' r='14' fill='%230f766e'/><circle cx='16' cy='16' r='6' fill='%235eead4'/></svg>">
 
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Outfit:wght@500;600;700&display=swap" rel="stylesheet">
+  <link href="https://fonts.googleapis.com/css2?family=Manrope:wght@400;500;600;700;800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
   <link rel="stylesheet" href="/app/style.css">
 
   <script src="https://cdn.jsdelivr.net/npm/lucide@0.460.0/dist/umd/lucide.min.js"></script>
@@ -25,6 +25,8 @@
       }
     } catch(e) {}
   </script>
+  <!-- Supabase JS Client for Email Password Reset & Auth -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 </head>
 <body class="auth-page">
   <!-- Ambient background: soft gradient mesh -->
@@ -54,126 +56,253 @@
       </a>
 
       <div class="nav-right">
+        <span class="landing-nav-pill">
+          <i data-lucide="flask-conical"></i>
+          <span>COX-2 Drug Discovery AI</span>
+        </span>
       </div>
     </div>
   </header>
 
-  <!-- Auth Main Container -->
-  <main class="auth-main">
-    <div class="container auth-container">
-      <div class="card auth-card reveal">
-        <!-- Brand Header -->
-        <div class="auth-header">
-          <div class="auth-icon-circle">
-            <i data-lucide="lock-keyhole"></i>
-          </div>
-          <h1 class="auth-title">Research Workspace Sign In</h1>
-          <p class="auth-sub">Access your personal COX-2 screening history, molecular dossiers, and lead optimization workspace.</p>
+  <!-- Split-Screen Landing + Auth Container -->
+  <main class="auth-main landing-auth-main">
+    <div class="container landing-auth-grid">
+
+      <!-- ═════════ LEFT: Scientific Landing Hero ═════════ -->
+      <section class="landing-hero-col" aria-label="Platform Overview">
+        <div class="landing-eyebrow">
+          <i data-lucide="sparkles"></i>
+          <span>Machine Learning Virtual Screening</span>
         </div>
 
-        <!-- ⚡ DEMO LOGIN BUTTON (Requested specifically by user) -->
-        <div class="demo-login-box">
-          <button type="button" class="btn btn-demo-login" id="btnDemoLogin">
-            <i data-lucide="zap"></i>
-            <span>Demo Login</span>
-          </button>
-          <p class="demo-subtext">Instant one-click access as <strong>Demo Researcher</strong> &middot; no password required.</p>
-        </div>
+        <h1 class="landing-headline">
+          Screen Bioactive Molecules Against <span class="landing-accent">COX-2</span> in Seconds
+        </h1>
 
-        <div class="auth-divider">
-          <span>or sign in with your research account</span>
-        </div>
+        <p class="landing-lead">
+          An end-to-end cheminformatics platform powered by <strong>XGBoost</strong> and <strong>RDKit</strong>.
+          Evaluate compound bioactivity from SMILES or drug names with explainable atom attribution,
+          3D conformational viewing, and publication-ready dossiers.
+        </p>
 
-        <!-- Tab Switcher -->
-        <div class="auth-tabs" role="tablist">
-          <button type="button" class="auth-tab-btn active" id="tabSignIn" role="tab" aria-selected="true">Sign In</button>
-          <button type="button" class="auth-tab-btn" id="tabSignUp" role="tab" aria-selected="false">Create Account</button>
-        </div>
-
-        <!-- Notification / Error Box -->
-        <div class="auth-alert" id="authAlert" hidden role="alert"></div>
-
-        <!-- ═════════ Sign In Form ═════════ -->
-        <form id="formSignIn" class="auth-form" novalidate>
-          <div class="form-group">
-            <label for="loginIdentifier">Email or Username</label>
-            <div class="input-with-icon">
-              <i data-lucide="mail"></i>
-              <input type="text" id="loginIdentifier" placeholder="name@institution.edu or username" required autocomplete="username">
+        <div class="landing-features">
+          <div class="landing-feature-item">
+            <span class="landing-feature-icon"><i data-lucide="scan-search"></i></span>
+            <div>
+              <strong>Explainable AI Attribution</strong>
+              <p>Pinpoints the top contributing atomic substructures directly on 2D structures.</p>
             </div>
           </div>
 
-          <div class="form-group">
-            <label for="loginPassword">Password</label>
-            <div class="input-with-icon">
-              <i data-lucide="key-round"></i>
-              <input type="password" id="loginPassword" placeholder="Enter your password" required autocomplete="current-password">
-              <button type="button" class="btn-toggle-pw" id="btnToggleLoginPw" aria-label="Toggle password visibility">
-                <i data-lucide="eye" id="eyeIconLogin"></i>
-              </button>
+          <div class="landing-feature-item">
+            <span class="landing-feature-icon"><i data-lucide="box"></i></span>
+            <div>
+              <strong>Interactive 3D Conformations</strong>
+              <p>Inspect energy-minimized 3D molecular geometries in an embedded WebGL viewer.</p>
             </div>
           </div>
 
-          <button type="submit" class="btn btn-primary btn-block btn-auth-submit" id="btnSubmitLogin">
-            <i data-lucide="log-in"></i>
-            <span>Sign In to BioPredict</span>
-          </button>
-        </form>
-
-        <!-- ═════════ Create Account Form ═════════ -->
-        <form id="formSignUp" class="auth-form" hidden novalidate>
-          <div class="form-group">
-            <label for="regUsername">Full Name or Username</label>
-            <div class="input-with-icon">
-              <i data-lucide="user"></i>
-              <input type="text" id="regUsername" placeholder="e.g. Dr. Jane Doe" required autocomplete="name">
+          <div class="landing-feature-item">
+            <span class="landing-feature-icon"><i data-lucide="layers"></i></span>
+            <div>
+              <strong>Batch Library Screening</strong>
+              <p>Upload CSV compound libraries to rank and prioritize high-potency leads.</p>
             </div>
           </div>
 
-          <div class="form-group">
-            <label for="regEmail">Academic / Research Email</label>
-            <div class="input-with-icon">
-              <i data-lucide="mail"></i>
-              <input type="email" id="regEmail" placeholder="jane.doe@university.edu" required autocomplete="email">
+          <div class="landing-feature-item">
+            <span class="landing-feature-icon"><i data-lucide="file-text"></i></span>
+            <div>
+              <strong>Exportable Research Dossiers</strong>
+              <p>Download 1-page PDF bioactivity &amp; therapeutic suitability reports.</p>
             </div>
           </div>
-
-          <div class="form-group">
-            <label for="regPassword">Password (minimum 6 characters)</label>
-            <div class="input-with-icon">
-              <i data-lucide="key-round"></i>
-              <input type="password" id="regPassword" placeholder="Create a secure password" required minlength="6" autocomplete="new-password">
-              <button type="button" class="btn-toggle-pw" id="btnToggleRegPw" aria-label="Toggle password visibility">
-                <i data-lucide="eye" id="eyeIconReg"></i>
-              </button>
-            </div>
-          </div>
-
-          <button type="submit" class="btn btn-primary btn-block btn-auth-submit" id="btnSubmitRegister">
-            <i data-lucide="user-plus"></i>
-            <span>Create Research Account</span>
-          </button>
-        </form>
-
-        <!-- Security Badge Footer -->
-        <div class="auth-security-footer">
-          <i data-lucide="shield-check"></i>
-          <span>Local SQLite Vault &middot; 256-Bit Salted Hashing &middot; Zero Plaintext Storage</span>
         </div>
-      </div>
+
+        <div class="landing-stats-bar">
+          <div class="landing-stat">
+            <strong>XGBoost</strong>
+            <span>Selected Engine</span>
+          </div>
+          <div class="landing-stat-sep" aria-hidden="true"></div>
+          <div class="landing-stat">
+            <strong>2048-bit</strong>
+            <span>Morgan Fingerprints</span>
+          </div>
+          <div class="landing-stat-sep" aria-hidden="true"></div>
+          <div class="landing-stat">
+            <strong>ChEMBL230</strong>
+            <span>Curated Bioassay</span>
+          </div>
+        </div>
+      </section>
+
+      <!-- ═════════ RIGHT: Sign In / Create Account Card ═════════ -->
+      <section class="landing-auth-col" aria-label="Authentication">
+        <div class="card auth-card">
+          <!-- Brand Header -->
+          <div class="auth-header">
+            <div class="auth-icon-circle">
+              <i data-lucide="lock-keyhole"></i>
+            </div>
+            <h2 class="auth-title">Research Workspace Sign In</h2>
+            <p class="auth-sub">Sign in to access virtual screening, molecular dossiers, and lead optimization.</p>
+          </div>
+
+          <!-- ⚡ DEMO LOGIN BUTTON -->
+          <div class="demo-login-box">
+            <button type="button" class="btn btn-demo-login" id="btnDemoLogin">
+              <i data-lucide="zap"></i>
+              <span>Demo Login</span>
+            </button>
+            <p class="demo-subtext">Instant one-click access as <strong>Demo Researcher</strong> &middot; no password required.</p>
+          </div>
+
+          <div class="auth-divider">
+            <span>or sign in with your research account</span>
+          </div>
+
+          <!-- Tab Switcher -->
+          <div class="auth-tabs" id="authTabs" role="tablist">
+            <button type="button" class="auth-tab-btn active" id="tabSignIn" role="tab" aria-selected="true">Sign In</button>
+            <button type="button" class="auth-tab-btn" id="tabSignUp" role="tab" aria-selected="false">Create Account</button>
+          </div>
+
+          <!-- Notification / Error Box -->
+          <div class="auth-alert" id="authAlert" hidden role="alert"></div>
+
+          <!-- ═════════ Sign In Form ═════════ -->
+          <form id="formSignIn" class="auth-form" novalidate>
+            <div class="form-group">
+              <label for="loginIdentifier">Email or Username</label>
+              <div class="input-with-icon">
+                <i data-lucide="mail"></i>
+                <input type="text" id="loginIdentifier" placeholder="name@institution.edu" required autocomplete="username">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <div class="label-row">
+                <label for="loginPassword">Password</label>
+                <button type="button" class="btn-forgot-link" id="btnShowForgot">Forgot password?</button>
+              </div>
+              <div class="input-with-icon">
+                <i data-lucide="key-round"></i>
+                <input type="password" id="loginPassword" placeholder="Enter your password" required autocomplete="current-password">
+                <button type="button" class="btn-toggle-pw" id="btnToggleLoginPw" aria-label="Toggle password visibility">
+                  <i data-lucide="eye" id="eyeIconLogin"></i>
+                </button>
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block btn-auth-submit" id="btnSubmitLogin">
+              <i data-lucide="log-in"></i>
+              <span>Sign In to BioPredict</span>
+            </button>
+          </form>
+
+          <!-- ═════════ Create Account Form ═════════ -->
+          <form id="formSignUp" class="auth-form" hidden novalidate>
+            <div class="form-group">
+              <label for="regUsername">Full Name or Username</label>
+              <div class="input-with-icon">
+                <i data-lucide="user"></i>
+                <input type="text" id="regUsername" placeholder="e.g. Dr. Jane Doe" required autocomplete="name">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="regEmail">Academic / Research Email</label>
+              <div class="input-with-icon">
+                <i data-lucide="mail"></i>
+                <input type="email" id="regEmail" placeholder="jane.doe@university.edu" required autocomplete="email">
+              </div>
+            </div>
+
+            <div class="form-group">
+              <label for="regPassword">Password (minimum 6 characters)</label>
+              <div class="input-with-icon">
+                <i data-lucide="key-round"></i>
+                <input type="password" id="regPassword" placeholder="Create a secure password" required minlength="6" autocomplete="new-password">
+                <button type="button" class="btn-toggle-pw" id="btnToggleRegPw" aria-label="Toggle password visibility">
+                  <i data-lucide="eye" id="eyeIconReg"></i>
+                </button>
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block btn-auth-submit" id="btnSubmitRegister">
+              <i data-lucide="user-plus"></i>
+              <span>Create Research Account</span>
+            </button>
+          </form>
+
+          <!-- ═════════ Forgot Password Form (Supabase Email) ═════════ -->
+          <form id="formForgotPw" class="auth-form" hidden novalidate>
+            <p class="forgot-info">
+              Enter your registered email address and we will send you a <strong>Supabase password-reset link</strong>.
+            </p>
+            <div class="form-group">
+              <label for="forgotEmail">Registered Email Address</label>
+              <div class="input-with-icon">
+                <i data-lucide="mail"></i>
+                <input type="email" id="forgotEmail" placeholder="name@institution.edu" required autocomplete="email">
+              </div>
+            </div>
+
+            <button type="submit" class="btn btn-primary btn-block btn-auth-submit" id="btnSubmitForgot">
+              <i data-lucide="send"></i>
+              <span>Send Reset Email</span>
+            </button>
+
+            <button type="button" class="btn-back-signin" id="btnBackToSignIn">
+              <i data-lucide="arrow-left"></i>
+              <span>Back to Sign In</span>
+            </button>
+          </form>
+
+          <!-- Security Badge Footer -->
+          <div class="auth-security-footer">
+            <i data-lucide="shield-check"></i>
+            <span>Encrypted Session Auth &middot; Supabase Email Recovery</span>
+          </div>
+        </div>
+      </section>
+
     </div>
   </main>
 
   <script src="/app/script.js"></script>
   <script>
-    // Standalone Auth Page Controller
     (function() {
       const tabSignIn = document.getElementById("tabSignIn");
       const tabSignUp = document.getElementById("tabSignUp");
+      const authTabs = document.getElementById("authTabs");
       const formSignIn = document.getElementById("formSignIn");
       const formSignUp = document.getElementById("formSignUp");
+      const formForgotPw = document.getElementById("formForgotPw");
       const authAlert = document.getElementById("authAlert");
       const btnDemoLogin = document.getElementById("btnDemoLogin");
+      const btnShowForgot = document.getElementById("btnShowForgot");
+      const btnBackToSignIn = document.getElementById("btnBackToSignIn");
+
+      let supabaseClient = null;
+      let configLoaded = false;
+
+      async function initSupabase() {
+        if (configLoaded) return;
+        configLoaded = true;
+        try {
+          const res = await fetch("/api/auth/config");
+          if (!res.ok) return;
+          const cfg = await res.json();
+          if (cfg.supabase_enabled && window.supabase && cfg.supabase_url && cfg.supabase_anon_key) {
+            supabaseClient = window.supabase.createClient(cfg.supabase_url, cfg.supabase_anon_key);
+          }
+        } catch (e) {
+          console.warn("Supabase config check skipped:", e);
+        }
+      }
+      initSupabase();
 
       function showAlert(msg, isSuccess = false) {
         if (!authAlert) return;
@@ -188,24 +317,28 @@
         authAlert.hidden = true;
       }
 
-      // Tab Switching
-      tabSignIn?.addEventListener("click", () => {
-        tabSignIn.classList.add("active");
-        tabSignUp.classList.remove("active");
-        formSignIn.hidden = false;
-        formSignUp.hidden = true;
+      function showView(view) {
         hideAlert();
-      });
+        formSignIn.hidden = view !== "signin";
+        formSignUp.hidden = view !== "signup";
+        formForgotPw.hidden = view !== "forgot";
+        authTabs.hidden = view === "forgot";
+        tabSignIn.classList.toggle("active", view === "signin");
+        tabSignUp.classList.toggle("active", view === "signup");
+      }
 
-      tabSignUp?.addEventListener("click", () => {
-        tabSignUp.classList.add("active");
-        tabSignIn.classList.remove("active");
-        formSignUp.hidden = false;
-        formSignIn.hidden = true;
-        hideAlert();
+      tabSignIn?.addEventListener("click", () => showView("signin"));
+      tabSignUp?.addEventListener("click", () => showView("signup"));
+      btnShowForgot?.addEventListener("click", () => {
+        const currentIdent = document.getElementById("loginIdentifier")?.value.trim();
+        if (currentIdent && currentIdent.includes("@")) {
+          const forgotInput = document.getElementById("forgotEmail");
+          if (forgotInput) forgotInput.value = currentIdent;
+        }
+        showView("forgot");
       });
+      btnBackToSignIn?.addEventListener("click", () => showView("signin"));
 
-      // Password visibility toggles
       function setupPwToggle(btnId, inputId, eyeId) {
         const btn = document.getElementById(btnId);
         const input = document.getElementById(inputId);
@@ -221,20 +354,18 @@
       setupPwToggle("btnToggleLoginPw", "loginPassword", "eyeIconLogin");
       setupPwToggle("btnToggleRegPw", "regPassword", "eyeIconReg");
 
-      // Handle successful authentication
       function completeAuth(token, user) {
         localStorage.setItem("biopredict_token", token);
         localStorage.setItem("biopredict_user", JSON.stringify(user));
         showAlert(`Welcome, ${user.username}! Redirecting to screening workspace…`, true);
         setTimeout(() => {
-          // Redirect to predict or previous page
           const urlParams = new URLSearchParams(window.location.search);
           const next = urlParams.get("next") || "/app/predict";
           window.location.href = next;
-        }, 800);
+        }, 700);
       }
 
-      // 1. DEMO LOGIN
+      // 1. DEMO LOGIN (Always works via local backend)
       btnDemoLogin?.addEventListener("click", async () => {
         hideAlert();
         btnDemoLogin.disabled = true;
@@ -259,6 +390,8 @@
       formSignIn?.addEventListener("submit", async (e) => {
         e.preventDefault();
         hideAlert();
+        await initSupabase();
+
         const identifier = document.getElementById("loginIdentifier")?.value.trim();
         const password = document.getElementById("loginPassword")?.value;
         const btn = document.getElementById("btnSubmitLogin");
@@ -273,6 +406,21 @@
         if (window.lucide) lucide.createIcons();
 
         try {
+          if (supabaseClient && identifier.includes("@")) {
+            const { data, error } = await supabaseClient.auth.signInWithPassword({
+              email: identifier,
+              password: password
+            });
+            if (error) throw new Error(error.message);
+            const userObj = {
+              id: data.user.id,
+              username: data.user.user_metadata?.username || identifier.split("@")[0],
+              email: data.user.email
+            };
+            completeAuth(data.session.access_token, userObj);
+            return;
+          }
+
           const res = await fetch("/api/auth/login", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -293,6 +441,8 @@
       formSignUp?.addEventListener("submit", async (e) => {
         e.preventDefault();
         hideAlert();
+        await initSupabase();
+
         const username = document.getElementById("regUsername")?.value.trim();
         const email = document.getElementById("regEmail")?.value.trim();
         const password = document.getElementById("regPassword")?.value;
@@ -312,6 +462,33 @@
         if (window.lucide) lucide.createIcons();
 
         try {
+          if (supabaseClient) {
+            const { data, error } = await supabaseClient.auth.signUp({
+              email,
+              password,
+              options: {
+                data: { username },
+                emailRedirectTo: window.location.origin + "/app/login"
+              }
+            });
+            if (error) throw new Error(error.message);
+
+            if (data.session) {
+              const userObj = {
+                id: data.user.id,
+                username: username,
+                email: data.user.email
+              };
+              completeAuth(data.session.access_token, userObj);
+            } else {
+              showAlert("Account created! Please check your email to confirm your address, then sign in.", true);
+              btn.disabled = false;
+              btn.innerHTML = '<i data-lucide="user-plus"></i><span>Create Research Account</span>';
+              if (window.lucide) lucide.createIcons();
+            }
+            return;
+          }
+
           const res = await fetch("/api/auth/register", {
             method: "POST",
             headers: { "Content-Type": "application/json" },
@@ -324,6 +501,44 @@
           showAlert(err.message || "Failed to create account.");
           btn.disabled = false;
           btn.innerHTML = '<i data-lucide="user-plus"></i><span>Create Research Account</span>';
+          if (window.lucide) lucide.createIcons();
+        }
+      });
+
+      // 4. FORGOT PASSWORD FORM (Supabase Email)
+      formForgotPw?.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        hideAlert();
+        await initSupabase();
+
+        const email = document.getElementById("forgotEmail")?.value.trim();
+        const btn = document.getElementById("btnSubmitForgot");
+
+        if (!email || !email.includes("@")) {
+          showAlert("Please enter a valid email address.");
+          return;
+        }
+
+        if (!supabaseClient) {
+          showAlert("Supabase email recovery is not configured yet. Please add SUPABASE_URL and SUPABASE_ANON_KEY to your environment variables.");
+          return;
+        }
+
+        btn.disabled = true;
+        btn.innerHTML = '<i data-lucide="loader-circle" class="spin"></i><span>Sending Reset Email…</span>';
+        if (window.lucide) lucide.createIcons();
+
+        try {
+          const { error } = await supabaseClient.auth.resetPasswordForEmail(email, {
+            redirectTo: window.location.origin + "/app/reset-password"
+          });
+          if (error) throw new Error(error.message);
+          showAlert("Password reset email sent! Check your inbox (and spam folder) for the recovery link.", true);
+        } catch (err) {
+          showAlert(err.message || "Failed to send password reset email.");
+        } finally {
+          btn.disabled = false;
+          btn.innerHTML = '<i data-lucide="send"></i><span>Send Reset Email</span>';
           if (window.lucide) lucide.createIcons();
         }
       });
