@@ -22,11 +22,11 @@
     if (!window.lucide) {
       document.write('<script src="https://unpkg.com/lucide@0.460.0/dist/umd/lucide.min.js"><\/script>');
     }
-    // Auto-forward to screening workspace if already logged in (unless explicitly forced)
+    // Auto-forward to home page if already logged in (unless explicitly forced)
     try {
       var _p = new URLSearchParams(window.location.search);
       if (!_p.get("force") && !_p.get("logout") && localStorage.getItem("biopredict_token")) {
-        window.location.replace("/app/predict");
+        window.location.replace("/app/home");
       }
     } catch(e) {}
   </script>
@@ -362,10 +362,10 @@
       function completeAuth(token, user) {
         localStorage.setItem("biopredict_token", token);
         localStorage.setItem("biopredict_user", JSON.stringify(user));
-        showAlert(`Welcome, ${user.username}! Redirecting to screening workspace…`, true);
+        showAlert(`Welcome, ${user.username}! Redirecting to BioPredict Home…`, true);
         setTimeout(() => {
           const urlParams = new URLSearchParams(window.location.search);
-          const next = urlParams.get("next") || "/app/predict";
+          const next = urlParams.get("next") || "/app/home";
           window.location.href = next;
         }, 700);
       }
