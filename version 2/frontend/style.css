@@ -1954,3 +1954,104 @@ kbd { background: #fff; border: 1px solid var(--line-2); border-bottom-width: 2p
   color: #b91c1c;
   background: #fef2f2;
 }
+
+/* ═════════════════════════════════════════════════════════════════════
+   PWA Install Banner
+   ═════════════════════════════════════════════════════════════════════ */
+.pwa-install-banner {
+  position: fixed;
+  left: 1.25rem;
+  bottom: 1.25rem;
+  z-index: 1200;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  border-radius: 14px;
+  background: #ffffff;
+  border: 1px solid var(--line);
+  box-shadow: 0 12px 32px rgba(18, 48, 47, 0.14);
+  max-width: 380px;
+  animation: pwaSlideUp 0.25s ease-out;
+}
+
+@keyframes pwaSlideUp {
+  from { opacity: 0; transform: translateY(12px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.pwa-install-info {
+  display: flex;
+  align-items: center;
+  gap: 0.7rem;
+}
+
+.pwa-install-info img {
+  border-radius: 9px;
+  flex-shrink: 0;
+}
+
+.pwa-install-info strong {
+  display: block;
+  font-size: 0.88rem;
+  color: var(--ink);
+  line-height: 1.2;
+}
+
+.pwa-install-info span {
+  display: block;
+  font-size: 0.75rem;
+  color: var(--muted);
+}
+
+.pwa-install-actions {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.btn-pwa-install {
+  padding: 0.45rem 0.9rem;
+  border-radius: 8px;
+  border: none;
+  background: var(--primary);
+  color: #ffffff;
+  font-size: 0.82rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.15s ease;
+}
+
+.btn-pwa-install:hover {
+  background: var(--primary-600);
+}
+
+.btn-pwa-dismiss {
+  width: 28px;
+  height: 28px;
+  border-radius: 8px;
+  border: 1px solid var(--line);
+  background: var(--surface-2);
+  color: var(--muted);
+  font-size: 1.1rem;
+  line-height: 1;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+}
+
+.btn-pwa-dismiss:hover {
+  color: var(--ink);
+  background: var(--line);
+}
+
+@media (max-width: 560px) {
+  .pwa-install-banner {
+    left: 0.75rem;
+    right: 0.75rem;
+    bottom: 0.75rem;
+    max-width: none;
+  }
+}

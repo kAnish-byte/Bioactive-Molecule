@@ -1582,3 +1582,72 @@ function initChatbot() {
     }
   });
 }
+
+/* ============================================================
+   PWA SUPPORT (Service Worker + Native Install Prompt)
+   ============================================================ */
+(function initPwaSupport() {
+  if ("serviceWorker" in navigator) {
+    window.addEventListener("load", () => {
+      navigator.serviceWorker.register("/app/sw.js", { scope: "/app/" }).catch((err) => {
+        console.warn("Service Worker registration failed:", err);
+      });
+    });
+  }
+
+  let deferredInstallPrompt = null;
+
+  function showInstallBanner() {
+    if (document.getElementById("pwaInstallBanner")) return;
+    if (sessionStorage.getItem("biopredict_pwa_dismissed") === "1") return;
+    if (window.matchMedia && window.matchMedia("(display-mode: standalone)").matches) return;
+
+    const banner = document.createElement("div");
+    banner.id = "pwaInstallBanner";
+    banner.className = "pwa-install-banner";
+    banner.setAttribute("role", "dialog");
+    banner.setAttribute("aria-label", "Install BioPredict App");
+    banner.innerHTML = `
+      <div class="pwa-install-info">
+        <img src="/app/assets/icon-192.png" alt="BioPredict icon" width="36" height="36">
+        <div>
+          <strong>Install BioPredict</strong>
+          <span>Add to your desktop or home screen</span>
+        </div>
+      </div>
+      <div class="pwa-install-actions">
+        <button type="button" class="btn-pwa-install" id="btnPwaInstall">Install</button>
+        <button type="button" class="btn-pwa-dismiss" id="btnPwaDismiss" aria-label="Dismiss install prompt">&times;</button>
+      </div>
+    `;
+    document.body.appendChild(banner);
+
+    document.getElementById("btnPwaInstall")?.addEventListener("click", async () => {
+      if (!deferredInstallPrompt) return;
+      deferredInstallPrompt.prompt();
+      const { outcome } = await deferredInstallPrompt.userChoice;
+      deferredInstallPrompt = null;
+      banner.remove();
+      if (outcome === "accepted") {
+        toast("BioPredict installed as an app!");
+      }
+    });
+
+    document.getElementById("btnPwaDismiss")?.addEventListener("click", () => {
+      sessionStorage.setItem("biopredict_pwa_dismissed", "1");
+      banner.remove();
+    });
+  }
+
+  window.addEventListener("beforeinstallprompt", (e) => {
+    e.preventDefault();
+    deferredInstallPrompt = e;
+    showInstallBanner();
+  });
+
+  window.addEventListener("appinstalled", () => {
+    deferredInstallPrompt = null;
+    document.getElementById("pwaInstallBanner")?.remove();
+    toast("BioPredict installed as an app!");
+  });
+})();

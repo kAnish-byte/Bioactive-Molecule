@@ -1902,6 +1902,22 @@ def serve_hero_molecule():
     return FileResponse(os.path.join(FRONTEND_DIR, "hero-molecule.js"), media_type="application/javascript")
 
 
+@app.get("/manifest.json")
+@app.get("/app/manifest.json")
+def serve_manifest():
+    return FileResponse(os.path.join(FRONTEND_DIR, "manifest.json"), media_type="application/manifest+json")
+
+
+@app.get("/sw.js")
+@app.get("/app/sw.js")
+def serve_service_worker():
+    return FileResponse(
+        os.path.join(FRONTEND_DIR, "sw.js"),
+        media_type="application/javascript",
+        headers={"Service-Worker-Allowed": "/app/", "Cache-Control": "no-cache"}
+    )
+
+
 @app.get("/assets/{file_path:path}")
 @app.get("/app/assets/{file_path:path}")
 def serve_assets(file_path: str):
